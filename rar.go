@@ -65,10 +65,9 @@ func (ads *AuthorizationDetails) UnmarshalJSON(b []byte) error {
 	// Allocate an array of Interface
 	*ads = make(AuthorizationDetails, len(raw))
 
-	var required requiredType
-
 	// for each json object in the list
 	for i, rawOject := range raw {
+		var required requiredType
 		// get required type
 		err := json.Unmarshal(rawOject, &required)
 		if err != nil {
@@ -140,5 +139,5 @@ type requiredType struct {
 }
 
 var (
-	ErrRFC9396MissingRequiredType = errors.New("RFC9396  missing required 'type' in 'authotization_details' ")
+	ErrRFC9396MissingRequiredType = errors.New("RFC9396  missing required 'type' in 'authorization_details' ")
 )

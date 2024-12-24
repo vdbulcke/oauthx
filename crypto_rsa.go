@@ -11,6 +11,14 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwe"
 )
 
+var (
+	_ JwtAdvertiser   = (*RSAJWTSigner)(nil)
+	_ OAuthPrivateKey = (*RSAJWTSigner)(nil)
+)
+
+// RSAJWTSigner an implementation of
+// [oauthx.OAuthPrivateKey] and [oauthx.JwtAdvertiser] for
+// [rsa.PrivateKey]
 type RSAJWTSigner struct {
 	PrivateKey *rsa.PrivateKey
 	PublicKey  *rsa.PublicKey
@@ -20,6 +28,11 @@ type RSAJWTSigner struct {
 	signingMethod jwt.SigningMethod
 }
 
+// NewRSAJWTSigner create a [oauthx.ECJWTSigner] from
+// [rsa.PrivateKey], with alg (MUST one of RS256,RS384, RS512).
+//
+// if staticKid is empty generate a kid based on the bytes of
+// the [rsa.PublicKey]
 func NewRSAJWTSigner(k *rsa.PrivateKey, alg, staticKid string) (*RSAJWTSigner, error) {
 	var method jwt.SigningMethod
 	switch alg {
@@ -50,6 +63,10 @@ func NewRSAJWTSigner(k *rsa.PrivateKey, alg, staticKid string) (*RSAJWTSigner, e
 		signingMethod: method,
 	}, nil
 
+}
+
+func (k *RSAJWTSigner) GetKid() string {
+	return k.Kid
 }
 
 // JWKS is the JSON JWKS representation of the rsa.PublicKey

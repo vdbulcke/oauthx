@@ -18,7 +18,7 @@ func NewAuthZRequest(opts ...OAuthOption) *AuthZRequest {
 	return r
 }
 
-func (r *AuthZRequest) AddOtps(opts ...OAuthOption) {
+func (r *AuthZRequest) AddOpts(opts ...OAuthOption) {
 	assert.NotNil(r.opts, assert.Panic, "Request opts not initialized")
 
 	r.opts = append(r.opts, opts...)
@@ -64,7 +64,7 @@ func NewBaseAuthzRequest() *AuthZRequest {
 		// code_challenge_method => "S256"
 		//    OPTIONAL, defaults to "plain" if not present in the request.  Code
 		//    verifier transformation method is "S256" or "plain".
-		DefaultPKCEOpt(),
+		PKCEOpt(),
 	)
 
 	return r
@@ -74,6 +74,17 @@ func NewBaseAuthzRequest() *AuthZRequest {
 // for this client
 func (c *OAuthClient) GetAuthzRequestOptions() []OAuthOption {
 	return c.staticAuthzRequestOpt
+}
+
+// NewBaseAuthzRequest make new [oauthx.AuthZRequest] based on
+// option passed with [oauthx.WithStaticAuthzRequestOpt] during client
+// creation.
+//
+// Then adds the extra opt OAuthOption
+func (c *OAuthClient) NewClientBaseAuthzRequest(extra ...OAuthOption) *AuthZRequest {
+	r := NewAuthZRequest(c.staticAuthzRequestOpt...)
+	r.AddOpts(extra...)
+	return r
 }
 
 func (c *OAuthClient) PlumbingGenerateAuthZRequestParam(req *AuthZRequest) (url.Values, error) {
@@ -118,11 +129,12 @@ func (c *OAuthClient) PlumbingGenerateAuthZRequestParam(req *AuthZRequest) (url.
 	return params, nil
 }
 
+// TokenRequest a token_endpoint request
 type TokenRequest struct {
 	opts []OAuthOption
 }
 
-func (r *TokenRequest) AddOtps(opts ...OAuthOption) {
+func (r *TokenRequest) AddOpts(opts ...OAuthOption) {
 	r.opts = append(r.opts, opts...)
 }
 
@@ -130,6 +142,14 @@ func NewTokenRequest(opts ...OAuthOption) *TokenRequest {
 	return &TokenRequest{opts: opts}
 }
 
+// NewAuthorizationCodeGrantTokenRequest creates a token_endpoint request
+// for the authorization code flow with
+//   - [oauthx.AuthorizationCodeGrantTypeOpt]
+//   - [oauthx.CodeOpt]
+//
+// and the following option if present in the [oauthx.OAuthContext]:
+//   - [oauthx.RedirectUriOpt] if RedirectUri is not empty
+//   - [oauthx.PKCEVerifierOpt] if PKCECodeVerifier is not empty
 func NewAuthorizationCodeGrantTokenRequest(code string, reqCtx *OAuthContext) *TokenRequest {
 	assert.NotNil(reqCtx, assert.Panic)
 
@@ -139,16 +159,20 @@ func NewAuthorizationCodeGrantTokenRequest(code string, reqCtx *OAuthContext) *T
 	)
 
 	if reqCtx.RedirectUri != "" {
-		r.AddOtps(RedirectUriOpt(reqCtx.RedirectUri))
+		r.AddOpts(RedirectUriOpt(reqCtx.RedirectUri))
 	}
 
 	if reqCtx.PKCECodeVerifier != "" {
-		r.AddOtps(PKCEVerifierOpt(reqCtx.PKCECodeVerifier))
+		r.AddOpts(PKCEVerifierOpt(reqCtx.PKCECodeVerifier))
 	}
 
 	return r
 }
 
+// NewRefreshTokenGrantTokenRequest creates a token_endpoint request
+// for the refresh token flow with:
+//   - [oauthx.RefreshTokenGrantTypeOpt]
+//   - [oauthx.RefreshTokenOpt]
 func NewRefreshTokenGrantTokenRequest(token string) *TokenRequest {
 	return NewTokenRequest(
 		RefreshTokenGrantTypeOpt(),
@@ -156,6 +180,8 @@ func NewRefreshTokenGrantTokenRequest(token string) *TokenRequest {
 	)
 }
 
+// Validate validate that the token request contains
+// the required parameter based on the "grant_type"
 func (r *TokenRequest) Validate() error {
 
 	// generate option
@@ -307,10 +333,34 @@ type RevokeRequest struct {
 	opts []OAuthOption
 }
 
-func (r *RevokeRequest) AddOtps(opts ...OAuthOption) {
+func (r *RevokeRequest) AddOpts(opts ...OAuthOption) {
 	r.opts = append(r.opts, opts...)
 }
 
+// NewRevokeRequest creates a new revocation request
+//
+// Example
+//
+//	req := oauthx.NewRevokeRequest(
+//	    // token   REQUIRED.  The token that the client wants to get revoked.
+//	    oauthx.TokenOpt(token),
+//	    // token_type_hint  OPTIONAL.  A hint about the type of the token
+//	    //         submitted for revocation.  Clients MAY pass this parameter in
+//	    //         order to help the authorization server to optimize the token
+//	    //         lookup.  If the server is unable to locate the token using
+//	    //         the given hint, it MUST extend its search across all of its
+//	    //         supported token types.  An authorization server MAY ignore
+//	    //         this parameter, particularly if it is able to detect the
+//	    //         token type automatically.  This specification defines two
+//	    //         such values:
+//	    //         * access_token: An access token as defined in [RFC6749],
+//	    //           Section 1.4
+//	    //         * refresh_token: A refresh token as defined in [RFC6749],
+//	    //           Section 1.5
+//	    oauthx.TokenTypeHintOpt(oauthx.TokenTypeRefreshToken),
+//	)
+//
+// rfc7009
 func NewRevokeRequest(opts ...OAuthOption) *RevokeRequest {
 	return &RevokeRequest{opts: opts}
 }
@@ -319,10 +369,40 @@ type IntrospectionRequest struct {
 	opts []OAuthOption
 }
 
-func (r *IntrospectionRequest) AddOtps(opts ...OAuthOption) {
+func (r *IntrospectionRequest) AddOpts(opts ...OAuthOption) {
 	r.opts = append(r.opts, opts...)
 }
 
+// NewIntrospectionRequest create a new introspection request with opts
+//
+// Example:
+//
+//		req := oauthx.NewIntrospectionRequest(
+//	        // token
+//	        //
+//	        //    REQUIRED.  The string value of the token.  For access tokens, this
+//	        //    is the "access_token" value returned from the token endpoint
+//	        //    defined in OAuth 2.0 [RFC6749], Section 5.1.  For refresh tokens,
+//	        //    this is the "refresh_token" value returned from the token endpoint
+//	        //    as defined in OAuth 2.0 [RFC6749], Section 5.1.  Other token types
+//	        //    are outside the scope of this specification.
+//	        oauthx.TokenOpt(token),
+//	        // token_type_hint
+//	        //
+//	        //    OPTIONAL.  A hint about the type of the token submitted for
+//	        //    introspection.  The protected resource MAY pass this parameter to
+//	        //    help the authorization server optimize the token lookup.  If the
+//	        //    server is unable to locate the token using the given hint, it MUST
+//	        //    extend its search across all of its supported token types.  An
+//	        //    authorization server MAY ignore this parameter, particularly if it
+//	        //    is able to detect the token type automatically.  Values for this
+//	        //    field are defined in the "OAuth Token Type Hints" registry defined
+//	        //    in OAuth Token Revocation [RFC7009].
+//	        oauthx.TokenTypeHintOpt(oauthx.TokenTypeAccessToken),
+//
+//		)
+//
+// rfc7662: Introspect Request
 func NewIntrospectionRequest(opts ...OAuthOption) *IntrospectionRequest {
 	return &IntrospectionRequest{opts: opts}
 }
@@ -331,10 +411,50 @@ type EndSessionRequest struct {
 	opts []OAuthOption
 }
 
-func (r *EndSessionRequest) AddOtps(opts ...OAuthOption) {
+func (r *EndSessionRequest) AddOpts(opts ...OAuthOption) {
 	r.opts = append(r.opts, opts...)
 }
 
+// NewEndSessionRequest OpenID Connect RP-Initiated Logout Request
+//
+// Example
+//
+//	// create a OpenID Connect RP-Initiated Logout Request
+//	req := oauthx.NewEndSessionRequest(
+//	    // id_token_hint
+//	    //    RECOMMENDED.  ID Token previously issued by the OP to the RP
+//	    //    passed to the Logout Endpoint as a hint about the End-User's
+//	    //    current authenticated session with the Client.  This is used as an
+//	    //    indication of the identity of the End-User that the RP is
+//	    //    requesting be logged out by the OP.
+//	    oauthx.IdTokenHintOpt(idToken),
+//	    // client_id
+//	    //    OPTIONAL.  OAuth 2.0 Client Identifier valid at the Authorization
+//	    //    Server.  When both "client_id" and "id_token_hint" are present,
+//	    //    the OP MUST verify that the Client Identifier matches the one used
+//	    //    when issuing the ID Token.  The most common use case for this
+//	    //    parameter is to specify the Client Identifier when
+//	    //    "post_logout_redirect_uri" is used but "id_token_hint" is not.
+//	    //    Another use is for symmetrically encrypted ID Tokens used as
+//	    //    "id_token_hint" values that require the Client Identifier to be
+//	    //    specified by other means, so that the ID Tokens can be decrypted
+//	    //    by the OP.
+//	    oauthx.ClientIdOpt("my_client_id"),
+//	    // post_logout_redirect_uri
+//	    //    OPTIONAL.  URI to which the RP is requesting that the End-User's
+//	    //    User Agent be redirected after a logout has been performed.  This
+//	    //    URI SHOULD use the "https" scheme and MAY contain port, path, and
+//	    //    query parameter components; however, it MAY use the "http" scheme,
+//	    //    provided that the Client Type is "confidential", as defined in
+//	    //    Section 2.1 of OAuth 2.0 [RFC6749], and provided the OP allows the
+//	    //    use of "http" RP URIs.  The URI MAY use an alternate scheme, such
+//	    //    as one that is intended to identify a callback into a native
+//	    //    application.  The value MUST have been previously registered with
+//	    //    the OP, either using the "post_logout_redirect_uris" Registration
+//	    //    parameter or via another mechanism.  An "id_token_hint" is also
+//	    //    RECOMMENDED when this parameter is included.
+//	    oauthx.PostLogoutRedirectUriOpt("https://mydomain.com/post/logout"),
+//	)
 func NewEndSessionRequest(opts ...OAuthOption) *EndSessionRequest {
 	return &EndSessionRequest{opts: opts}
 }

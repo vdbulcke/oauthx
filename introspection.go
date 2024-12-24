@@ -247,6 +247,23 @@ func newDefaultIntrospectionParseOption() *IntrospectionParseOption {
 	}
 }
 
+// DoIntrospectionRequest
+//
+// Example:
+//
+//	// create new introspect request
+//	req := oauthx.NewIntrospectionRequest(
+//	    oauthx.TokenOpt(token), // the token to introspect
+//	)
+//	// make introspect request with the OAuthClient client
+//	// using the default opts
+//	resp, err := client.DoIntrospectionRequest(ctx, req)
+//	if err != nil {
+//	    // handle err
+//	    return err
+//	}
+//
+// Implements rfc7662,  draft-ietf-oauth-jwt-introspection-response-03
 func (c *OAuthClient) DoIntrospectionRequest(ctx context.Context, r *IntrospectionRequest, opts ...IntrospectionParseOptFunc) (*IntrospectionResponse, error) {
 	assert.NotNil(ctx, assert.Panic, "oauth-client: 'ctx' cannot be nil")
 	assert.NotNil(r, assert.Panic, "oauth-client: 'RevokeRequest' cannot be nil")

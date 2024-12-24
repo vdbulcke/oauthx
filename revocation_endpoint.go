@@ -13,6 +13,22 @@ import (
 	"github.com/vdbulcke/oauthx/tracing"
 )
 
+// DoRevokeRequest
+//
+// Example:
+//
+//	req := oauthx.NewRevokeRequest(
+//	    oauthx.TokenOpt(token),
+//	    oauthx.TokenTypeHintOpt(oauthx.TokenTypeRefreshToken),
+//	)
+//
+//	err := c.client.DoRevokeRequest(ctx, req)
+//	if err != nil {
+//	    // handle err
+//	    return err
+//	}
+//
+// implements rfc7009
 func (c *OAuthClient) DoRevokeRequest(ctx context.Context, r *RevokeRequest) error {
 	assert.NotNil(ctx, assert.Panic, "oauth-client: 'ctx' cannot be nil")
 	assert.NotNil(r, assert.Panic, "oauth-client: 'RevokeRequest' cannot be nil")
@@ -87,8 +103,8 @@ func (c *OAuthClient) PlumbingDoHttpRevocationRequest(ctx context.Context, req *
 			ResponseHeader: resp.Header,
 		}
 
-		err = fmt.Errorf("rfc7009: expected status code 200 but got '%d'", resp.StatusCode)
-		httpErr.Err = err
+		httpErr.Err = fmt.Errorf("rfc7009: expected status code 200 but got '%d'", resp.StatusCode)
+		err = httpErr
 		return err
 	}
 

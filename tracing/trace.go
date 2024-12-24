@@ -13,6 +13,11 @@ var (
 type traceHeader string
 type traceID string
 
+// ContextWithTraceID creates a new context from parent, and adds
+// tracing 'traceHeader' and 'traceID' in context values
+//
+// when passing this tracing context (or a children) http requests
+// will automatically add "'traceHeader': 'traceId'" in request headers
 func ContextWithTraceID(parent context.Context, traceHeader, traceID string) context.Context {
 	ctx := context.WithValue(parent, traceHeaderKey, traceHeader)
 	return context.WithValue(ctx, traceIDKey, traceID)

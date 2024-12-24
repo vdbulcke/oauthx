@@ -5,6 +5,13 @@ import (
 	"net/http"
 )
 
+// HttpErr error resulting from http call.
+//
+// useful to have access to response header/response body
+// in case of error for troubleshooting.
+//
+// Use AsRFC6749Error() to try unmarshalling the response body
+// into standard rfc6749 OAuth2 Error
 type HttpErr struct {
 	RespBody       []byte      `json:"resp_body"`
 	StatusCode     int         `json:"status_code"`

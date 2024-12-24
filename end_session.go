@@ -15,7 +15,11 @@ import (
 	"github.com/vdbulcke/oauthx/tracing"
 )
 
+// EndSessionResponse response
+// of OpenID Connect RP-Initiated Logout 1.0, 2.  RP-Initiated Logout
 type EndSessionResponse struct {
+	// the post_logout_redirect_uri if provided in the request
+	// of empty string "" otherwise
 	Redirect string
 }
 
@@ -27,6 +31,52 @@ type EndSessionResponse struct {
 //	End-User's User Agent to the OP's Logout Endpoint.  This URL is
 //	normally obtained via the "end_session_endpoint" element of the OP's
 //	Discovery response or may be learned via other mechanisms.
+//
+// Example
+//
+//	// create a OpenID Connect RP-Initiated Logout Request
+//	req := oauthx.NewEndSessionRequest(
+//	    // id_token_hint
+//	    //    RECOMMENDED.  ID Token previously issued by the OP to the RP
+//	    //    passed to the Logout Endpoint as a hint about the End-User's
+//	    //    current authenticated session with the Client.  This is used as an
+//	    //    indication of the identity of the End-User that the RP is
+//	    //    requesting be logged out by the OP.
+//	    oauthx.IdTokenHintOpt(idToken),
+//	    // client_id
+//	    //    OPTIONAL.  OAuth 2.0 Client Identifier valid at the Authorization
+//	    //    Server.  When both "client_id" and "id_token_hint" are present,
+//	    //    the OP MUST verify that the Client Identifier matches the one used
+//	    //    when issuing the ID Token.  The most common use case for this
+//	    //    parameter is to specify the Client Identifier when
+//	    //    "post_logout_redirect_uri" is used but "id_token_hint" is not.
+//	    //    Another use is for symmetrically encrypted ID Tokens used as
+//	    //    "id_token_hint" values that require the Client Identifier to be
+//	    //    specified by other means, so that the ID Tokens can be decrypted
+//	    //    by the OP.
+//	    oauthx.ClientIdOpt("my_client_id"),
+//	    // post_logout_redirect_uri
+//	    //    OPTIONAL.  URI to which the RP is requesting that the End-User's
+//	    //    User Agent be redirected after a logout has been performed.  This
+//	    //    URI SHOULD use the "https" scheme and MAY contain port, path, and
+//	    //    query parameter components; however, it MAY use the "http" scheme,
+//	    //    provided that the Client Type is "confidential", as defined in
+//	    //    Section 2.1 of OAuth 2.0 [RFC6749], and provided the OP allows the
+//	    //    use of "http" RP URIs.  The URI MAY use an alternate scheme, such
+//	    //    as one that is intended to identify a callback into a native
+//	    //    application.  The value MUST have been previously registered with
+//	    //    the OP, either using the "post_logout_redirect_uris" Registration
+//	    //    parameter or via another mechanism.  An "id_token_hint" is also
+//	    //    RECOMMENDED when this parameter is included.
+//	    oauthx.PostLogoutRedirectUriOpt("https://mydomain.com/post/logout"),
+//	)
+//	//
+//	// send endSession request
+//	resp, err := client.DoEndSessionRequest(ctx,req)
+//	if err != nil {
+//	    return err
+//	}
+//	// resp.Redirect is the redirect to the post_logout_redirect_uri
 func (c *OAuthClient) DoEndSessionRequest(ctx context.Context, r *EndSessionRequest) (*EndSessionResponse, error) {
 
 	params, err := c.PlumbingGenerateEndSessionRequestParam(r)
@@ -147,7 +197,7 @@ func (c *OAuthClient) PlumbingDoHttpEndSessionRequest(ctx context.Context, req *
 
 	err = fmt.Errorf("end_session: expected status code 200/204 301/302 but got '%d'", resp.StatusCode)
 	httpErr.Err = err
-	return nil, err
+	return nil, httpErr
 }
 
 func (c *OAuthClient) getHttpClientWithoutRedirect() *http.Client {

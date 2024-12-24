@@ -182,8 +182,8 @@ func (c *OAuthClient) PlumbingDoHttpTokenRequest(ctx context.Context, req *http.
 	//	token, and constructs the response by adding the following parameters
 	//	to the entity-body of the HTTP response with a 200 (OK) status code:
 	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("rfc6749: expected status code 200 but got '%d'", resp.StatusCode)
-		httpErr.Err = err
+		httpErr.Err = fmt.Errorf("rfc6749: expected status code 200 but got '%d'", resp.StatusCode)
+		err = httpErr
 		return nil, err
 	}
 
@@ -196,9 +196,8 @@ func (c *OAuthClient) PlumbingDoHttpTokenRequest(ctx context.Context, req *http.
 	//	parameters does not matter and can vary.
 	ct, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 	if ct != "application/json" {
-
-		err = fmt.Errorf("rfc6749: expected Content-Type 'application/json' but got '%s'", ct)
-		httpErr.Err = err
+		httpErr.Err = fmt.Errorf("rfc6749: expected Content-Type 'application/json' but got '%s'", ct)
+		err = httpErr
 		return nil, err
 	}
 

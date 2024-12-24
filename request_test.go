@@ -15,17 +15,17 @@ func TestClaimsParam(t *testing.T) {
 
 	slog.SetDefault(logger)
 
-	claims := oauthx.OpendIdRequestedClaimsParam{
+	claims := oauthx.OpenIdRequestedClaimsParam{
 		IDToken: map[string]*oauthx.OpenIdRequestedClaim{
 			"foo": nil,
-			"bar": oauthx.NewOpenIdRequestedClaim(true, []string{}),
-			"acr": oauthx.NewOpenIdRequestedClaim(true, []string{
+			"bar": oauthx.NewOpenIdRequestedClaim(true, []interface{}{}),
+			"acr": oauthx.NewOpenIdRequestedClaim(true, []interface{}{
 				"urn:mace:incommon:iap:silver",
 				"urn:mace:incommon:iap:bronze",
 			}),
 		},
 		Userinfo: map[string]*oauthx.OpenIdRequestedClaim{
-			"hello": oauthx.NewOpenIdRequestedClaim(false, []string{"world"}),
+			"hello": oauthx.NewOpenIdRequestedClaim(false, []interface{}{"world"}),
 		},
 	}
 
@@ -70,7 +70,7 @@ func TestParsClaimsParam(t *testing.T) {
 		}	
 	`)
 
-	var claims oauthx.OpendIdRequestedClaimsParam
+	var claims oauthx.OpenIdRequestedClaimsParam
 	err := json.Unmarshal(example, &claims)
 	if err != nil {
 		slog.Error("json", "err", err)

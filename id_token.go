@@ -24,15 +24,15 @@ var (
 	ErrValidationMissingAtHash = errors.New("id_token: missing 'at_hash' claims")
 )
 
-// 2.  ID Token
-
-//    The primary extension that OpenID Connect makes to OAuth 2.0 to
-//    enable End-Users to be Authenticated is the ID Token data structure.
-//    The ID Token is a security token that contains Claims about the
-//    Authentication of an End-User by an Authorization Server when using a
-//    Client, and potentially other requested Claims.  The ID Token is
-//    represented as a JSON Web Token (JWT) [JWT].
-
+// openid-core-spec 2. ID Token
+//
+//	The primary extension that OpenID Connect makes to OAuth 2.0 to
+//	enable End-Users to be Authenticated is the ID Token data structure.
+//	The ID Token is a security token that contains Claims about the
+//	Authentication of an End-User by an Authorization Server when using a
+//	Client, and potentially other requested Claims.  The ID Token is
+//	represented as a JSON Web Token (JWT) [JWT].
+//
 // The following Claims are used within the ID Token for all OAuth 2.0
 // flows used by OpenID Connect:
 type IDToken struct {
@@ -181,7 +181,7 @@ type IDToken struct {
 	Sig jose.Signature
 }
 
-// 5.1.  Standard Claims
+// openid-core-spec 5.1.  Standard Claims
 //
 // This specification defines a set of standard Claims.  They can be
 // requested to be returned either in the UserInfo Response, per
@@ -278,7 +278,7 @@ type OpendIdStandardClaims struct {
 	UpdatedAt *jwt.NumericDate `json:"updated_at,omitempty"`
 }
 
-// 5.1.1.  Address Claim
+// openid-core-spec 5.1.1.  Address Claim
 //
 //	The Address Claim represents a physical mailing address.
 //	Implementations MAY return only a subset of the fields of an
@@ -318,6 +318,18 @@ type OpenIdStandardClaimAddress struct {
 	Country string `json:"country,omitempty"`
 }
 
+// UnmarshallClaims [json.Unmarshal] jwt payload into
+// custom claims struct.
+//
+// Example:
+//
+//	// try to parse idToken payload to extract
+//	// openid standard claims set
+//	var stdClaims oauthx.OpendIdStandardClaims
+//	err := idToken.UnmarshallClaims(&stdClaims)
+//	if err != nil {
+//	    return err
+//	}
 func (t *IDToken) UnmarshallClaims(claims any) error {
 
 	err := json.Unmarshal(t.RawPayload, claims)
@@ -330,6 +342,8 @@ func (t *IDToken) UnmarshallClaims(claims any) error {
 
 type IDTokenValidationFunc func(cxt context.Context, t *IDToken) error
 
+// WithIDTokenRequiredClaimsValidation validate the [oauthx.IDToken] struct
+// fields tagged as 'validate:"required"'
 func WithIDTokenRequiredClaimsValidation() IDTokenValidationFunc {
 	return func(ctx context.Context, t *IDToken) error {
 
@@ -391,10 +405,9 @@ func (c *OAuthClient) WithIDTokenAudianceValidation() IDTokenValidationFunc {
 //     scope of this specification) that result in the "azp"
 //     (authorized party) Claim being present, it SHOULD validate the
 //     "azp" value as specified by those extensions.
-// 5.   This validation MAY include that when an "azp" (authorized
-//      party) Claim is present, the Client SHOULD verify that its
-//      "client_id" is the Claim Value.
-
+//  5. This validation MAY include that when an "azp" (authorized
+//     party) Claim is present, the Client SHOULD verify that its
+//     "client_id" is the Claim Value.
 func (c *OAuthClient) WithIDTokenAuthorizePartyValidation() IDTokenValidationFunc {
 	return func(ctx context.Context, t *IDToken) error {
 
@@ -541,6 +554,13 @@ func WithIDTokenAuthTimeValidation(maxDuration time.Duration) IDTokenValidationF
 	}
 }
 
+// NewIDTokenDefaultValidation creates default validation options for IDToken validation
+//   - [oauthx.WithIDTokenRequiredClaimsValidation]
+//   - [OAuthClient.WithIDTokenIssuerValidation]
+//   - [OAuthClient.WithIDTokenAudianceValidation]
+//   - [OAuthClient.WithIDTokenSignatureValidation]
+//   - [oauthx.WithIDTokenExpirationValidation]
+//   - add extraOtps in the list
 func (c *OAuthClient) NewIDTokenDefaultValidation(extraOpts ...IDTokenValidationFunc) []IDTokenValidationFunc {
 	defaultOpts := []IDTokenValidationFunc{
 		WithIDTokenRequiredClaimsValidation(),
@@ -594,6 +614,8 @@ func (c *OAuthClient) newDefaultIDTokenParseOpt() *IDTokenParseOption {
 	}
 }
 
+// WithIDTokenParseOptRequiredEncryption requires the [oauthx.IDToken] to
+// be encrypted and supported by the [oauthx.OAuthPrivateKey] for this client
 func WithIDTokenParseOptRequiredEncryption() IDTokenParseOptFunc {
 	return func(opt *IDTokenParseOption) {
 		opt.requireEncryption = true
@@ -601,7 +623,7 @@ func WithIDTokenParseOptRequiredEncryption() IDTokenParseOptFunc {
 }
 
 // WithIDTokenParseOptExtraValidation adds extra validation to
-// default validations [NewIDTokenDefaultValidation()]
+// default validations [oauthx.NewIDTokenDefaultValidation]
 func WithIDTokenParseOptExtraValidation(extra ...IDTokenValidationFunc) IDTokenParseOptFunc {
 	return func(opt *IDTokenParseOption) {
 		opt.validationOpts = append(opt.validationOpts, extra...)
@@ -609,13 +631,16 @@ func WithIDTokenParseOptExtraValidation(extra ...IDTokenValidationFunc) IDTokenP
 }
 
 // WithIDTokenParseOptCustomValidation replace defaults validations
-// with the [validationOpts]
+// with the validationOpts
 func WithIDTokenParseOptCustomValidation(validationOpts ...IDTokenValidationFunc) IDTokenParseOptFunc {
 	return func(opt *IDTokenParseOption) {
 		opt.validationOpts = validationOpts
 	}
 }
 
+// ParseIDToken parse and validate the idToken string, using
+// [OAuthClient.NewIDTokenDefaultValidation] by default or
+// override validation options from the parseOpts
 func (c *OAuthClient) ParseIDToken(ctx context.Context, idToken string, parseOpts ...IDTokenParseOptFunc) (*IDToken, error) {
 	rawToken := idToken
 
@@ -684,6 +709,21 @@ func (c *OAuthClient) ParseIDToken(ctx context.Context, idToken string, parseOpt
 	}
 
 	return &token, nil
+}
+
+// Validate apply the [oauthx.IDTokenValidationFunc] validation opts in order
+func (t *IDToken) Validate(ctx context.Context, opts ...IDTokenValidationFunc) error {
+
+	// apply validations functions
+	for _, validationFunc := range opts {
+		err := validationFunc(ctx, t)
+		if err != nil {
+			// return the token to still have
+			// access to the Raw properties
+			return fmt.Errorf("id_token: validation %w", err)
+		}
+	}
+	return nil
 }
 
 func (c *OAuthClient) decryptJwtOrEcho(idToken string, alg string, requireEnc bool) (decryptedJwt string, err error) {

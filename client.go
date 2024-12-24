@@ -28,54 +28,105 @@ type OAuthClient struct {
 
 type OAuthClientOptFunc func(*OAuthClient)
 
+// WithAuthMethod set the [oauthx.AuthMethod] for this client
+//
+// default to [oauthx.None]
 func WithAuthMethod(method AuthMethod) OAuthClientOptFunc {
 	return func(oc *OAuthClient) {
 		oc.authmethod = method
 	}
 }
 
+// WithRFC9101JarJwtTTL set the time to live for the
+// 'request=' jwt parameter when using [oauthx.WithGeneratedRequestJWT]
+// or [oauthx.WithStrictGeneratedRequestJWT]
 func WithRFC9101JarJwtTTL(ttl time.Duration) OAuthClientOptFunc {
 	return func(oc *OAuthClient) {
 		oc.rfc9101JarJwtTTL = ttl
 	}
 }
 
+// WithStaticAuthzRequestOpt add static [oauthx.OAuthOption] that can be used
+// to contruct a new [oauthx.AuthZRequest] with [oauthx.NewClientBaseAuthzRequest]
 func WithStaticAuthzRequestOpt(opt ...OAuthOption) OAuthClientOptFunc {
 	return func(oc *OAuthClient) {
 		oc.staticAuthzRequestOpt = opt
 	}
 }
 
+// WithOAuthPrivateKey set the [oauthx.OAuthPrivateKey] for this client
+// used to generate 'request=' jwt parameter, decrypt eventually encrytped
+// userinfo, introspect, id_token jwt.
 func WithOAuthPrivateKey(key OAuthPrivateKey) OAuthClientOptFunc {
 	return func(oc *OAuthClient) {
 		oc.privateKey = key
 	}
 }
 
+// WithKeySet override the default [oauthx.RemoteJWKSet]
+// from the 'jwks_uri' endpoint of the WellKknown
 func WithKeySet(ks JWKSet) OAuthClientOptFunc {
 	return func(oc *OAuthClient) {
 		oc.keySet = ks
 	}
 }
 
+// WithHttpClient override the default [http.DefaultClient] for
+// this [oauthx.OAuthClient]
 func WithHttpClient(client *http.Client) OAuthClientOptFunc {
 	return func(oc *OAuthClient) {
 		oc.client = client
 	}
 }
 
+// WithUserinfoHttpMethod override the default
+// [http.MethodGet] for making userinfo request
 func WithUserinfoHttpMethod(method string) OAuthClientOptFunc {
 	return func(oc *OAuthClient) {
 		oc.userinfoHttpMethod = method
 	}
 }
 
+// WithEndSessionHttpMethod override the default
+// [http.MethodGet] for making endSession request
 func WithEndSessionHttpMethod(method string) OAuthClientOptFunc {
 	return func(oc *OAuthClient) {
 		oc.endSessionHttpMethod = method
 	}
 }
 
+// NewOAuthClient create a new [oauthx.OAuthClient] with options
+//
+// Example:
+//
+//	// you should create your own *http.Client especially for
+//	// production
+//	httpClient := client_http.GenerateMyCustomHttpClient()
+//	//
+//	// create a context with trace-id header, for
+//	// making the initial WellKnown http request
+//	ctx := context.Background()
+//	traceId := uuid.New().String()
+//	ctx = tracing.ContextWithTraceID(ctx, "x-trace-id", traceId)
+//	//
+//	// fetch the '/.well-known/openid-configuration' metadata
+//	issuer := "https://my.authorization.server.com"
+//	wk, err = oauthx.NewWellKnownOpenidConfiguration(ctx, issuer, httpClient)
+//	if err != nil {
+//	    return nil, fmt.Errorf("oidc wellknown: %w", err)
+//	}
+//	//
+//	// create a AuthMethod
+//	clientId := "my_client_id"
+//	auth := oauthx.NewClientSecretPost(clientId, "my-super-secure-secret")
+//	//
+//	// finally create the OAuthClient, with some options
+//	client := oauthx.NewOAuthClient(clientId, wk,
+//	    // settting the auth method
+//	    oauthx.WithAuthMethod(auth),
+//	    // setting the production http.Client
+//	    oauthx.WithHttpClient(httpClient),
+//	)
 func NewOAuthClient(clientId string, wk *WellKnownConfiguration, opts ...OAuthClientOptFunc) *OAuthClient {
 	assert.NotNil(wk, assert.Panic, "oauth-client: WellKnownConfiguration are required")
 	assert.StrNotEmpty(clientId, assert.Panic, "clientId cannot be empty")
@@ -83,7 +134,7 @@ func NewOAuthClient(clientId string, wk *WellKnownConfiguration, opts ...OAuthCl
 	c := &OAuthClient{
 		ClientId:             clientId,
 		wk:                   wk,
-		authmethod:           NewAuthMethodNone(), // default no auth method
+		authmethod:           NewAuthMethodNone(clientId), // default no auth method
 		client:               http.DefaultClient,
 		rfc9101JarJwtTTL:     10 * time.Minute,
 		userinfoHttpMethod:   http.MethodGet,

@@ -39,6 +39,9 @@ func WithRemoteJWKSetHttpClient(client *http.Client) RemoteJWKSetOptFunc {
 	}
 }
 
+// RemoteJWKSet implements the [oauthx.JWKSet] interface.
+//
+// It will fetch and cache the Jwks from the remote jwks_uri endpoint.
 type RemoteJWKSet struct {
 	JwksUri string
 

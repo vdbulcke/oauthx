@@ -52,8 +52,8 @@ func PKCES256ChallengeOpt(verifier string) OAuthOption {
 	}
 }
 
-// DefaultPKCEOpt add pkce option with method S256.
-func DefaultPKCEOpt() OAuthOption {
+// PKCEOpt generates a new verifier and adds pkce option with method S256.
+func PKCEOpt() OAuthOption {
 	verifier := GenerateVerifier()
 	return challengeOption{
 		challenge_method: "S256",

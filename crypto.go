@@ -23,7 +23,7 @@ type JwtAdvertiser interface {
 	JWKS() ([]byte, error) // marshal of JWKS
 }
 
-// NewJwtSigner create a JwtSigned for the correspond key type
+// NewJwtSigner create a OAuthPrivateKey for the correspond key type
 //
 // supported key tupes are [rsa.PrivateKey] and [ecdsa.PrivateKey]
 //

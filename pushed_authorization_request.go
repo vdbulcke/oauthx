@@ -96,8 +96,8 @@ func (c *OAuthClient) PlumbingDoHttpPARRequest(ctx context.Context, req *http.Re
 	// If the verification is successful, the server MUST generate a request
 	// URI and provide it in the response with a "201" HTTP status code.
 	if resp.StatusCode != http.StatusCreated {
-		err = fmt.Errorf("rfc9126: expected status code 201 but got '%d'", resp.StatusCode)
-		httpErr.Err = err
+		httpErr.Err = fmt.Errorf("rfc9126: expected status code 201 but got '%d'", resp.StatusCode)
+		err = httpErr
 		return nil, err
 	}
 

@@ -53,15 +53,27 @@ type AuthMethod interface {
 //		either because it uses only the Implicit Flow (and so does not use
 //		the Token Endpoint) or because it is a Public Client with no
 //		Client Secret or other authentication mechanism.
-type None struct{}
+type None struct {
+	ClientId string
+}
 
-func NewAuthMethodNone() *None {
-	return &None{}
+// NewAuthMethodNone creates a None auth method
+//
+// if clientId is not empty then always adds
+// "client_id=" parameter
+func NewAuthMethodNone(clientId string) *None {
+	return &None{
+		ClientId: clientId,
+	}
 }
 
 func (a *None) NewOAuthAuthenticatedRequest(oauthEndpoint OAuthAuthenticatedEndpoint, endpoint string, params url.Values) (*http.Request, error) {
 	if params == nil {
 		return nil, errors.New("basic auth: params are required")
+	}
+
+	if a.ClientId != "" {
+		params.Set("client_id", a.ClientId)
 	}
 
 	// encode provided params, and create request
@@ -218,51 +230,51 @@ type PrivateKeyJwt struct {
 	jwtSigner OAuthPrivateKey
 }
 
-// WithTTL used to set the "exp" claims
+// WithPrivateKeyJwtTTL used to set the "exp" claims
 // default ttl is 5 minutes
-func WithTTL(ttl time.Duration) PrivateKeyJwtOptFunc {
+func WithPrivateKeyJwtTTL(ttl time.Duration) PrivateKeyJwtOptFunc {
 	return func(a *PrivateKeyJwt) {
 		a.ttl = ttl
 	}
 }
 
-// WithAlwaysIncludeClientIdParam always add the 'client_id='
+// WithPrivateKeyJwtAlwaysIncludeClientIdParam always add the 'client_id='
 // parameter along side the 'client_assertion=' and 'client_assertion_type='
-func WithAlwaysIncludeClientIdParam() PrivateKeyJwtOptFunc {
+func WithPrivateKeyJwtAlwaysIncludeClientIdParam() PrivateKeyJwtOptFunc {
 	return func(a *PrivateKeyJwt) {
 		a.alwaysIncludeClientIdParam = true
 	}
 }
 
-// WithEndpointAsAudiance set the 'aud' claims the jwt
+// WithPrivateKeyJwtEndpointAsAudiance set the 'aud' claims the jwt
 // assertion to the current endpoint of the request
 //
-// Since it cannot be used with [oauthx.WithFixedAudiance]
+// Since it cannot be used with [oauthx.WithPrivateKeyJwtFixedAudiance]
 // it resets any fixed audiance previously set
-func WithEndpointAsAudiance() PrivateKeyJwtOptFunc {
+func WithPrivateKeyJwtEndpointAsAudiance() PrivateKeyJwtOptFunc {
 	return func(a *PrivateKeyJwt) {
 		a.endpointAudiance = true
 		a.fixedAudiance = ""
 	}
 }
 
-// WithFixedAudiance set the 'aud' claims the jwt
+// WithPrivateKeyJwtFixedAudiance set the 'aud' claims the jwt
 // assertion to the aud for all endpoint
 //
 // typically aud should be the issuer
 //
-// Since it cannot be used with [oauthx.WithEndpointAsAudiance]
-// it disables WithEndpointAsAudiance option
-func WithFixedAudiance(aud string) PrivateKeyJwtOptFunc {
+// Since it cannot be used with [oauthx.WithPrivateKeyJwtEndpointAsAudiance]
+// it disables WithPrivateKeyJwtEndpointAsAudiance option
+func WithPrivateKeyJwtFixedAudiance(aud string) PrivateKeyJwtOptFunc {
 	return func(a *PrivateKeyJwt) {
 		a.fixedAudiance = aud
 		a.endpointAudiance = false
 	}
 }
 
-// WithPushedAuthorizationRequestEndpointAudiance set the 'aud' claims the jwt
+// WithPrivateKeyJwtPushedAuthorizationRequestEndpointAudiance set the 'aud' claims the jwt
 // assertion to the aud for the endpoint
-func WithAlternativeEndpointAudiance(endpoint OAuthAuthenticatedEndpoint, aud string) PrivateKeyJwtOptFunc {
+func WithPrivateKeyJwtAlternativeEndpointAudiance(endpoint OAuthAuthenticatedEndpoint, aud string) PrivateKeyJwtOptFunc {
 	return func(a *PrivateKeyJwt) {
 		switch endpoint {
 		case PushedAuthorizationRequestEndpoint:
@@ -278,6 +290,7 @@ func WithAlternativeEndpointAudiance(endpoint OAuthAuthenticatedEndpoint, aud st
 	}
 }
 
+// NewPrivateKeyJwt creates a new 'private_key_jwt' authmethod
 func NewPrivateKeyJwt(clientId string, signer OAuthPrivateKey, opts ...PrivateKeyJwtOptFunc) *PrivateKeyJwt {
 	a := &PrivateKeyJwt{
 		ClientId:                   clientId,

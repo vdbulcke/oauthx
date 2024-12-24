@@ -11,6 +11,14 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwe"
 )
 
+var (
+	_ JwtAdvertiser   = (*ECJWTSigner)(nil)
+	_ OAuthPrivateKey = (*ECJWTSigner)(nil)
+)
+
+// ECJWTSigner an implementation of
+// [oauthx.OAuthPrivateKey] and [oauthx.JwtAdvertiser] for
+// [ecdsa.PrivateKey]
 type ECJWTSigner struct {
 	PrivateKey *ecdsa.PrivateKey
 	PublicKey  *ecdsa.PublicKey
@@ -20,6 +28,11 @@ type ECJWTSigner struct {
 	signingMethod jwt.SigningMethod
 }
 
+// NewECJWTSigner create a [oauthx.ECJWTSigner] from
+// [ecdsa.PrivateKey], with alg (MUST one of ES256,ES384, ES512).
+//
+// if staticKid is empty generate a kid based on the bytes of
+// the [ecdsa.PublicKey]
 func NewECJWTSigner(k *ecdsa.PrivateKey, alg, staticKid string) (*ECJWTSigner, error) {
 	var method jwt.SigningMethod
 	switch alg {
@@ -51,6 +64,10 @@ func NewECJWTSigner(k *ecdsa.PrivateKey, alg, staticKid string) (*ECJWTSigner, e
 		signingMethod: method,
 	}, nil
 
+}
+
+func (k *ECJWTSigner) GetKid() string {
+	return k.Kid
 }
 
 // JWKS is the JSON JWKS representation of the rsa.PublicKey

@@ -3,6 +3,7 @@ package oauthx
 import (
 	"encoding/json"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/vdbulcke/oauthx/assert"
@@ -22,8 +23,9 @@ type OAuthContext struct {
 	AcrValues        string `json:"acr_values"`
 	RedirectUri      string `json:"redirect_uri"`
 
-	WithRFC9126Par     bool
-	WithRFC9101Request bool
+	WithRFC9126Par                        bool
+	WithRFC9101Request                    bool
+	WithStrictRequiredAuthorizationParams bool
 }
 
 // OAuthOption a OAuth2 request
@@ -53,6 +55,26 @@ func (p withRequestOpt) SetRequestContext(oauthCtx *OAuthContext) {
 	oauthCtx.WithRFC9101Request = true
 }
 
+type withStrictRequestOpt struct {
+	paramsToKeep []string
+}
+
+func (p withStrictRequestOpt) SetValue(m url.Values) {
+
+	for k, _ := range m {
+		// remove all param keys that are not
+		// in the keep list
+		if !slices.Contains(p.paramsToKeep, k) {
+			delete(m, k)
+		}
+	}
+}
+
+func (p withStrictRequestOpt) SetClaim(_ map[string]interface{}) {}
+func (p withStrictRequestOpt) SetRequestContext(oauthCtx *OAuthContext) {
+	oauthCtx.WithRFC9101Request = true
+}
+
 type setParamAndClaim struct{ k, v string }
 
 func (p setParamAndClaim) SetValue(m url.Values)             { m.Set(p.k, p.v) }
@@ -73,6 +95,14 @@ func (p setParamAndClaim) SetRequestContext(oauthCtx *OAuthContext) {
 		oauthCtx.AcrValues = p.v
 
 	}
+}
+
+type strictRequiredAuthorizationParameter struct{}
+
+func (p strictRequiredAuthorizationParameter) SetValue(_ url.Values)             {}
+func (p strictRequiredAuthorizationParameter) SetClaim(_ map[string]interface{}) {}
+func (p strictRequiredAuthorizationParameter) SetRequestContext(oauthCtx *OAuthContext) {
+	oauthCtx.WithStrictRequiredAuthorizationParams = true
 }
 
 type setParam struct{ k, v string }
@@ -149,6 +179,43 @@ func WithPushedAuthotizationRequest() OAuthOption {
 // ONLY for [oauthx.AuthZRequest]
 func WithGeneratedRequestJWT() OAuthOption {
 	return withRequestOpt{}
+}
+
+// WithStrictGeneratedRequestJWT rfc9101 generate the 'request'
+// jwt parameter inluding the claims defined with
+// the SetClaim() function from the [oauthx.OAuthOption] interface.
+//
+// AND will remove all other previsouly set parameter not
+// in the keep list. use []string{} to remove all param other
+// than authentication paramater and the 'request='.
+//
+// # WARNING use as last option
+//
+// ONLY for [oauthx.AuthZRequest]
+func WithStrictGeneratedRequestJWT(keep ...string) OAuthOption {
+	return withStrictRequestOpt{
+		paramsToKeep: keep,
+	}
+}
+
+// WithStrictRequiredAuthorizationParams
+//
+// Use this option with [oauthx.WithPushedAuthotizationRequest] or
+// [oauthx.WithStrictGeneratedRequestJWT] to still include the following
+// required oauth2/oidc paramater on the authorization endpoint, alongside
+// 'request=' or 'request_uri=' parameter.
+//
+// RCF6749 (OAuth2 ) and OIDC standard
+// requires mandatory parameter present
+// RCF6749 Section 4.1.1
+//   - response_type
+//   - client_id
+//
+// openid core spec:
+//   - scope (MUST includes 'openid')
+//   - redirect_uri
+func WithStrictRequiredAuthorizationParams() OAuthOption {
+	return strictRequiredAuthorizationParameter{}
 }
 
 // SetOAuthParam set key/value as both query parameter
@@ -314,8 +381,17 @@ func PostLogoutRedirectUriOpt(uri string) OAuthOption {
 // requested MAY also be specified.
 //
 // claim parameter is passed using [oauthx.SetOAuthJSONParam]
-func ClaimsParameterOpt(claims *OpenIdRequestedClaim) OAuthOption {
+func ClaimsParameterOpt(claims *OpenIdRequestedClaimsParam) OAuthOption {
 	return SetOAuthJSONParam("claims", claims)
+}
+
+// AuthorizationDetailsParamaterOpt add rfc9396 'authorization_details=' parameter
+// as a JSON parameter.
+//
+// JSON will be stringify if passed as query string parameter, and kept as JSON object
+// in request= jwt
+func AuthorizationDetailsParamaterOpt(authDetails AuthorizationDetails) OAuthOption {
+	return SetOAuthJSONParam("authorization_details", authDetails)
 }
 
 // 5.5.1.  Individual Claims Requests
@@ -335,7 +411,7 @@ type OpenIdRequestedClaim struct {
 	// value
 	//    OPTIONAL.  Requests that the Claim be returned with a
 	//    particular value.
-	Value string `json:"value,omitempty"`
+	Value interface{} `json:"value,omitempty"`
 
 	// values
 	//    OPTIONAL.  Requests that the Claim be returned with one of a
@@ -343,10 +419,10 @@ type OpenIdRequestedClaim struct {
 	//    preference.  This is processed equivalently to a "value"
 	//    request, except that a choice of acceptable Claim values is
 	//    provided.
-	Values []string `json:"values,omitempty"`
+	Values []interface{} `json:"values,omitempty"`
 }
 
-func NewOpenIdRequestedClaim(essential bool, values []string) *OpenIdRequestedClaim {
+func NewOpenIdRequestedClaim(essential bool, values []interface{}) *OpenIdRequestedClaim {
 	c := &OpenIdRequestedClaim{
 		Essential: essential,
 	}
@@ -360,16 +436,16 @@ func NewOpenIdRequestedClaim(essential bool, values []string) *OpenIdRequestedCl
 	return c
 }
 
-func (c *OpenIdRequestedClaim) GetValues() []string {
+func (c *OpenIdRequestedClaim) GetValues() []interface{} {
 	if c.Value != "" {
-		return []string{c.Value}
+		return []interface{}{c.Value}
 	}
 
 	return c.Values
 }
 
 // 5.5.  Requesting Claims using the "claims" Request Parameter
-type OpendIdRequestedClaimsParam struct {
+type OpenIdRequestedClaimsParam struct {
 
 	// userinfo
 	//    OPTIONAL.  Requests that the listed individual Claims be returned
