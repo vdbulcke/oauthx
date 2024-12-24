@@ -22,7 +22,10 @@ implements:
 - openid-connect-discovery: `/.well-known/openid-configuration`
 - openid-connect-rpinitiated: RP initiated logout (endSession)
 
-## Inpired by 
+> WARNING: 🚧 still under construction 🚧 
+
+
+## Inspired by 
 
 - https://github.com/ory/fosite
 - https://github.com/coreos/go-oidc
