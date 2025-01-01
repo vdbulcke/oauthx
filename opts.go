@@ -176,12 +176,16 @@ func WithPushedAuthotizationRequest() OAuthOption {
 // jwt parameter inluding the claims defined with
 // the SetClaim() function from the [oauthx.OAuthOption] interface
 //
-// ONLY for [oauthx.AuthZRequest]
+// NOTE: keep eventual duplicated parameters as querystring
+// and jwt claim. See [oauthx.WithGeneratedRequestJWTOnly] and
+// [oauthx.WithStrictRequiredAuthorizationParams] as other related options
+//
+// ONLY for [oauthx.AuthZRequest].
 func WithGeneratedRequestJWT() OAuthOption {
 	return withRequestOpt{}
 }
 
-// WithStrictGeneratedRequestJWT rfc9101 generate the 'request'
+// WithGeneratedRequestJWTOnly rfc9101 generate the 'request'
 // jwt parameter inluding the claims defined with
 // the SetClaim() function from the [oauthx.OAuthOption] interface.
 //
@@ -189,10 +193,11 @@ func WithGeneratedRequestJWT() OAuthOption {
 // in the keep list. use []string{} to remove all param other
 // than authentication paramater and the 'request='.
 //
-// # WARNING use as last option
+// See [oauthx.WithStrictRequiredAuthorizationParams] and
+// [oauthx.WithGeneratedRequestJWT] as other related options
 //
 // ONLY for [oauthx.AuthZRequest]
-func WithStrictGeneratedRequestJWT(keep ...string) OAuthOption {
+func WithGeneratedRequestJWTOnly(keep ...string) OAuthOption {
 	return withStrictRequestOpt{
 		paramsToKeep: keep,
 	}
