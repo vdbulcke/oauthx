@@ -18,7 +18,7 @@ type PanicMode int
 
 func log(err error, arg ...interface{}) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ASSERTION: error %+v\n", arg)
+		fmt.Fprintf(os.Stderr, "ASSERTION: error %+v\n", err)
 
 	}
 	fmt.Fprintf(os.Stderr, "ASSERT: %+v\n", arg)
