@@ -23,7 +23,8 @@ type OAuthClient struct {
 	userinfoHttpMethod   string
 	endSessionHttpMethod string
 
-	client *http.Client
+	// client *http.Client
+	http *httpLimitClient
 }
 
 type OAuthClientOptFunc func(*OAuthClient)
@@ -73,9 +74,25 @@ func WithKeySet(ks JWKSet) OAuthClientOptFunc {
 
 // WithHttpClient override the default [http.DefaultClient] for
 // this [oauthx.OAuthClient]
+//
+// use the default [oauthx.LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES]
 func WithHttpClient(client *http.Client) OAuthClientOptFunc {
 	return func(oc *OAuthClient) {
-		oc.client = client
+		oc.http = newHttpLimitClient(LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES, client)
+	}
+}
+
+// WithHttpClient override the default [http.DefaultClient] for
+// this [oauthx.OAuthClient] and set the max reponse size limit
+// for the http response body.
+//
+// see [oauthx.WithHttpClient] as alternative
+func WithHttpClientWithLimit(client *http.Client, limit int64) OAuthClientOptFunc {
+	if limit < 0 {
+		panic("http limit cannot be negative")
+	}
+	return func(oc *OAuthClient) {
+		oc.http = newHttpLimitClient(limit, client)
 	}
 }
 
@@ -135,7 +152,7 @@ func NewOAuthClient(clientId string, wk *WellKnownConfiguration, opts ...OAuthCl
 		ClientId:             clientId,
 		wk:                   wk,
 		authmethod:           NewAuthMethodNone(clientId), // default no auth method
-		client:               http.DefaultClient,
+		http:                 newHttpLimitClient(LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES, http.DefaultClient),
 		rfc9101JarJwtTTL:     10 * time.Minute,
 		userinfoHttpMethod:   http.MethodGet,
 		endSessionHttpMethod: http.MethodGet,
@@ -149,7 +166,7 @@ func NewOAuthClient(clientId string, wk *WellKnownConfiguration, opts ...OAuthCl
 	// no explicit keyset default to
 	// 'jwks_uri' from metadata if defined
 	if c.keySet == nil && c.wk.JwksUri != "" {
-		c.keySet = NewRemoteJWKSet(wk.JwksUri, WithRemoteJWKSetHttpClient(c.client))
+		c.keySet = NewRemoteJWKSet(wk.JwksUri, withRemoteJWKSetlimitClient(c.http))
 	}
 
 	return c

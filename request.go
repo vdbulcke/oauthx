@@ -180,6 +180,24 @@ func NewRefreshTokenGrantTokenRequest(token string) *TokenRequest {
 	)
 }
 
+// NewRefreshTokenGrantTokenRequest creates a token_endpoint request
+// for the client_credentials flow with options:
+//   - [oauthx.ClientCredentialsGrantTypeOpt]
+//   - [oauthx.ScopeOpt] if scopes are provided
+func NewClientCredentialsGrantTokenRequest(scopes ...string) *TokenRequest {
+	req := NewTokenRequest(
+		ClientCredentialsGrantTypeOpt(),
+	)
+
+	if len(scopes) > 0 {
+		req.AddOpts(
+			ScopeOpt(scopes),
+		)
+	}
+
+	return req
+}
+
 // Validate validate that the token request contains
 // the required parameter based on the "grant_type"
 func (r *TokenRequest) Validate() error {

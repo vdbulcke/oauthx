@@ -163,12 +163,12 @@ func SetOAuthClaimOnly(key string, value interface{}) OAuthOption {
 	return setClaimsOnly{k: key, v: value}
 }
 
-// WithPushedAuthotizationRequest rfc9126 make authorization request via
+// WithPushedAuthorizationRequest rfc9126 make authorization request via
 // pushed authorization endpoint, and use the 'request_uri' , 'client_id'
 // for the authorization_endpoint
 //
 // ONLY for [oauthx.AuthZRequest]
-func WithPushedAuthotizationRequest() OAuthOption {
+func WithPushedAuthorizationRequest() OAuthOption {
 	return withParOtp{}
 }
 
@@ -205,7 +205,7 @@ func WithGeneratedRequestJWTOnly(keep ...string) OAuthOption {
 
 // WithStrictRequiredAuthorizationParams
 //
-// Use this option with [oauthx.WithPushedAuthotizationRequest] or
+// Use this option with [oauthx.WithPushedAuthorizationRequest] or
 // [oauthx.WithStrictGeneratedRequestJWT] to still include the following
 // required oauth2/oidc paramater on the authorization endpoint, alongside
 // 'request=' or 'request_uri=' parameter.
@@ -329,6 +329,11 @@ func GrantTypeOpt(grant string) OAuthOption {
 // RefreshTokenGrantTypeOpt set 'grant_type=refresh_token' parameter
 func RefreshTokenGrantTypeOpt() OAuthOption {
 	return GrantTypeOpt("refresh_token")
+}
+
+// ClientCredentialsGrantTypeOpt set 'grant_type=client_credentials' parameter
+func ClientCredentialsGrantTypeOpt() OAuthOption {
+	return GrantTypeOpt("client_credentials")
 }
 
 // RefreshTokenOpt set 'refresh_token=' parameter

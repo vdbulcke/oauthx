@@ -212,7 +212,7 @@ func TestAuthZcodeFlow(t *testing.T) {
 					oauthx.ClientIdOpt("oauthx-test"),
 					oauthx.RedirectUriOpt("http://example.com/callback"),
 					oauthx.ScopeOpt([]string{"openid", "profile"}),
-					oauthx.WithPushedAuthotizationRequest(),
+					oauthx.WithPushedAuthorizationRequest(),
 				)
 				return req
 			},
@@ -230,7 +230,7 @@ func TestAuthZcodeFlow(t *testing.T) {
 					oauthx.ClientIdOpt("oauthx-test"),
 					oauthx.RedirectUriOpt("http://example.com/callback"),
 					oauthx.ScopeOpt([]string{"openid", "profile"}),
-					oauthx.WithPushedAuthotizationRequest(),
+					oauthx.WithPushedAuthorizationRequest(),
 					oauthx.WithGeneratedRequestJWTOnly(),
 				)
 				return req
@@ -249,7 +249,7 @@ func TestAuthZcodeFlow(t *testing.T) {
 					oauthx.ClientIdOpt("oauthx-test"),
 					oauthx.RedirectUriOpt("http://example.com/callback"),
 					oauthx.ScopeOpt([]string{"openid", "profile"}),
-					oauthx.WithPushedAuthotizationRequest(),
+					oauthx.WithPushedAuthorizationRequest(),
 					oauthx.WithGeneratedRequestJWTOnly(),
 					oauthx.WithStrictRequiredAuthorizationParams(),
 				)

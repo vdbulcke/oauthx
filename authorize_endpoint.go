@@ -40,13 +40,13 @@ type AuthorizationRequest struct {
 //		// pushed authorization endpoint and
 //		// only use client_id and request_uri for
 //		// redirect to the authorization_endpoint
-//		oauthx.WithPushedAuthotizationRequest(),
+//		oauthx.WithPushedAuthorizationRequest(),
 //	)
 //	// now let's make the authorzation request
-//	// (if using options shuch as WithPushedAuthotizationRequest()
+//	// (if using options shuch as WithPushedAuthorizationRequest()
 //	// this will make an acutual http request), then this will
 //	// generate the authorization url use to redirect the user to the
-//	// Authorization Server, a OauthContext (containing relevant parameter
+//	// Authorization Server, a OAuthContext (containing relevant parameter
 //	// that may be required to make the associated token request: pkce code_verifier,
 //	// redirect_uri, client_id, etc).
 //	authRequest, err := client.DoAuthorizationRequest(ctx, req)

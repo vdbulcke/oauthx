@@ -72,16 +72,16 @@ func (c *OAuthClient) PlumbingDoHttpPARRequest(ctx context.Context, req *http.Re
 	defer timer.ObserveDuration()
 	defer metric.DeferMonitorError(endpoint, &err)
 
-	tracing.AddTraceIDFromContext(ctx, req)
+	tracing.AddHeadersFromContext(ctx, req)
 
-	resp, err := c.client.Do(req)
+	resp, err := c.http.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, c.http.maxSizeBytes))
 	if err != nil {
 		err = fmt.Errorf("rfc9126: %w", err)
 		return nil, err
@@ -91,6 +91,12 @@ func (c *OAuthClient) PlumbingDoHttpPARRequest(ctx context.Context, req *http.Re
 		StatusCode:     resp.StatusCode,
 		RespBody:       body,
 		ResponseHeader: resp.Header,
+	}
+
+	if len(body) >= int(c.http.maxSizeBytes) {
+		err = fmt.Errorf("http-limit: http resp body max size limit exceeded: %d bytes", c.http.maxSizeBytes)
+		httpErr.Err = err
+		return nil, httpErr
 	}
 
 	// If the verification is successful, the server MUST generate a request

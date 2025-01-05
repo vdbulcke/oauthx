@@ -28,14 +28,48 @@ func (c *OAuthClient) GetJWKSet() JWKSet {
 
 type RemoteJWKSetOptFunc func(ks *RemoteJWKSet)
 
+// WithRemoteJWKSetAlwaysSyncOnErr force a refectch of the remote jwks_uri endpoint
+// if signature verification fail for a given cached 'kid'.
+//
+// Only use this if the Authorization Server allows for 'kid' re-use.
+// Default is false
 func WithRemoteJWKSetAlwaysSyncOnErr() RemoteJWKSetOptFunc {
 	return func(ks *RemoteJWKSet) {
 		ks.reSyncOnErr = true
 	}
 }
+
+// WithRemoteJWKSetHttpClient set a custom [http.Client] for fetching the
+// jwks from the remote endpoint.
+//
+// note: uses [oauthx.LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES] as max response size
+//
+// see [oauthx.WithRemoteJWKSetHttpClientLimit] as alternative options
 func WithRemoteJWKSetHttpClient(client *http.Client) RemoteJWKSetOptFunc {
 	return func(ks *RemoteJWKSet) {
-		ks.client = client
+		ks.http = newHttpLimitClient(LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES, client)
+	}
+}
+
+func withRemoteJWKSetlimitClient(client *httpLimitClient) RemoteJWKSetOptFunc {
+	return func(ks *RemoteJWKSet) {
+		ks.http = client
+	}
+}
+
+// WithRemoteJWKSetHttpClientLimit set a custom  [http.Client] and limit for fetching the
+// jwks from the remote endpoint.
+//
+// the limit is expressed as max allowed response size in bytes for the http response body
+//
+// see [oauthx.WithRemoteJWKSetHttpClient] as alternative options
+func WithRemoteJWKSetHttpClientLimit(client *http.Client, limit int64) RemoteJWKSetOptFunc {
+	if limit < 0 {
+		panic("http client limit cannot be negative")
+	}
+
+	return func(ks *RemoteJWKSet) {
+		ks.http = newHttpLimitClient(limit, client)
 	}
 }
 
@@ -47,7 +81,8 @@ type RemoteJWKSet struct {
 
 	reSyncOnErr bool
 
-	client       *http.Client
+	// client       *http.Client
+	http         *httpLimitClient
 	requestGroup singleflight.Group
 	cache        jose.JSONWebKeySet
 	mu           sync.RWMutex
@@ -58,7 +93,7 @@ func NewRemoteJWKSet(jwksUri string, opts ...RemoteJWKSetOptFunc) *RemoteJWKSet 
 	defaultKS := &RemoteJWKSet{
 		JwksUri:     jwksUri,
 		reSyncOnErr: false,
-		client:      http.DefaultClient,
+		http:        newHttpLimitClient(LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES, http.DefaultClient),
 		cache:       jose.JSONWebKeySet{},
 	}
 
@@ -123,27 +158,35 @@ func (ks *RemoteJWKSet) syncRemoteJwksUri(ctx context.Context) (err error) {
 		return err
 	}
 
-	tracing.AddTraceIDFromContext(ctx, req)
+	tracing.AddHeadersFromContext(ctx, req)
 
-	resp, err := ks.client.Do(req)
+	resp, err := ks.http.client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, ks.http.maxSizeBytes))
 	if err != nil {
 		return err
 	}
+	httpErr := &HttpErr{
+		StatusCode:     resp.StatusCode,
+		RespBody:       body,
+		ResponseHeader: resp.Header,
+	}
+
+	if len(body) >= int(ks.http.maxSizeBytes) {
+
+		err = fmt.Errorf("http-limit: http resp body max size limit exceeded: %d bytes", len(body))
+		httpErr.Err = err
+		return httpErr
+	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = &HttpErr{
-			RespBody:       body,
-			StatusCode:     resp.StatusCode,
-			ResponseHeader: resp.Header,
-			Err:            fmt.Errorf("invalid status code %d expected %d", resp.StatusCode, http.StatusOK),
-		}
-		return err
+		err = fmt.Errorf("invalid status code %d expected %d", resp.StatusCode, http.StatusOK)
+		httpErr.Err = err
+		return httpErr
 	}
 
 	var jwks jose.JSONWebKeySet

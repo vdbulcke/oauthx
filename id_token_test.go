@@ -120,7 +120,7 @@ func TestIDTokenParse(t *testing.T) {
 	ctx := context.Background()
 	httpClient := mockServerRS256.mockServer.Client()
 
-	wk := assert.Must(oauthx.NewWellKnownOpenidConfiguration(ctx, mockServerRS256.mockServer.URL, httpClient))
+	wk := assert.Must(oauthx.NewWellKnownOpenidConfiguration(ctx, mockServerRS256.mockServer.URL, oauthx.WellKnownWithHttpClientDefaultLimit(httpClient)))
 
 	clientOAuthKey := assert.Must(oauthx.NewOAuthPrivateKey(clientRS256key, "RS256", "client-kid"))
 

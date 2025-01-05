@@ -340,11 +340,57 @@ type WellKnownConfiguration struct {
 	WellKnownRaw []byte
 }
 
+type WellKnownOtpFunc func(*WellKnownOptions)
+
+// WellKnownOptions options for making the
+// call to the metadata endpoint
+type WellKnownOptions struct {
+	http *httpLimitClient
+}
+
+// WellKnownWithHttpClient set a [http.Client] and a limit for the http response
+// for the metadata endpoint call.
+//
+// # The limit is expressed as max number of bytes read from the response body
+//
+// See [oauthx.WellKnownWithHttpClientDefaultLimit] as alternative options
+func WellKnownWithHttpClient(client *http.Client, limit int64) WellKnownOtpFunc {
+	return func(wko *WellKnownOptions) {
+		if client == nil {
+			client = http.DefaultClient
+		}
+
+		if limit < 0 {
+			panic("http client limit cannot be negative")
+		}
+
+		wko.http = newHttpLimitClient(limit, client)
+	}
+}
+
+// WellKnownWithHttpClientDefaultLimit set a [http.Client] and a limit for the http response
+// for the metadata endpoint call.
+//
+// The limit is expressed as max number of bytes read from the response body
+// and is set to [oauthx.LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES]
+//
+// See [oauthx.WellKnownWithHttpClient] as alternative options
+func WellKnownWithHttpClientDefaultLimit(client *http.Client) WellKnownOtpFunc {
+	return func(wko *WellKnownOptions) {
+		if client == nil {
+			client = http.DefaultClient
+		}
+
+		wko.http = newHttpLimitClient(LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES, client)
+	}
+}
+
 // NewWellKnownOpenidConfiguration fetch "/.well-known/openid-configuration"
 // based on [issuer] according to OpenID Connect Discovery 1.0
 //
-// If [client] is nil [http.DefaultClient] is used
-func NewWellKnownOpenidConfiguration(ctx context.Context, issuer string, client *http.Client) (_ *WellKnownConfiguration, err error) {
+// Use [oauthx.WellKnownWithHttpClient] or [oauthx.WellKnownWithHttpClientDefaultLimit] as options.
+// By Default, uses  [http.DefaultClient] and [oauthx.LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES] as limit
+func NewWellKnownOpenidConfiguration(ctx context.Context, issuer string, opts ...WellKnownOtpFunc) (_ *WellKnownConfiguration, err error) {
 	assert.StrNotEmpty(issuer, assert.Panic, "oidc-wellknown: issuer cannot be empty")
 	// OpenID Connect Discovery 1.0
 	//  OpenID Providers supporting Discovery MUST make a JSON document
@@ -352,7 +398,7 @@ func NewWellKnownOpenidConfiguration(ctx context.Context, issuer string, client 
 	//  "/.well-known/openid-configuration" to the Issuer.
 	wkEndpoint := strings.TrimSuffix(issuer, "/") + "/.well-known/openid-configuration"
 
-	wk, err := fetchWellKnown(ctx, wkEndpoint, client)
+	wk, err := fetchWellKnown(ctx, wkEndpoint, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("oidc: %w", err)
 	}
@@ -371,8 +417,9 @@ func NewWellKnownOpenidConfiguration(ctx context.Context, issuer string, client 
 // NewWellKnownOAuthAuthorizationServer fetch "/.well-known/oauth-authorization-server"
 // based on [issuer] according to rfc8414: OAuth 2.0 Authorization Server Metadata
 //
-// If [client] is nil [http.DefaultClient] is used
-func NewWellKnownOAuthAuthorizationServer(ctx context.Context, issuer string, client *http.Client) (_ *WellKnownConfiguration, err error) {
+// Use [oauthx.WellKnownWithHttpClient] or [oauthx.WellKnownWithHttpClientDefaultLimit] as options.
+// By Default, uses  [http.DefaultClient] and [oauthx.LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES] as limit
+func NewWellKnownOAuthAuthorizationServer(ctx context.Context, issuer string, opts ...WellKnownOtpFunc) (_ *WellKnownConfiguration, err error) {
 	assert.StrNotEmpty(issuer, assert.Panic, "rfc8414: issuer cannot be empty")
 
 	// rfc8414: OAuth 2.0 Authorization Server Metadata
@@ -386,7 +433,7 @@ func NewWellKnownOAuthAuthorizationServer(ctx context.Context, issuer string, cl
 
 	wkEndpoint := strings.TrimSuffix(issuer, "/") + "/.well-known/oauth-authorization-server"
 
-	wk, err := fetchWellKnown(ctx, wkEndpoint, client)
+	wk, err := fetchWellKnown(ctx, wkEndpoint, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("rfc8414: %w", err)
 	}
@@ -407,12 +454,13 @@ func NewWellKnownOAuthAuthorizationServer(ctx context.Context, issuer string, cl
 // NewInsecureWellKnownEndpoint fetch metadata from [wkEndpoint]
 // without any validation
 //
-// If [client] is nil [http.DefaultClient] is used
-func NewInsecureWellKnownEndpoint(ctx context.Context, wkEndpoint string, client *http.Client) (_ *WellKnownConfiguration, err error) {
-	return fetchWellKnown(ctx, wkEndpoint, client)
+// Use [oauthx.WellKnownWithHttpClient] or [oauthx.WellKnownWithHttpClientDefaultLimit] as options.
+// By Default, uses  [http.DefaultClient] and [oauthx.LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES] as limit
+func NewInsecureWellKnownEndpoint(ctx context.Context, wkEndpoint string, opts ...WellKnownOtpFunc) (_ *WellKnownConfiguration, err error) {
+	return fetchWellKnown(ctx, wkEndpoint, opts...)
 }
 
-func fetchWellKnown(ctx context.Context, wkEndpoint string, client *http.Client) (_ *WellKnownConfiguration, err error) {
+func fetchWellKnown(ctx context.Context, wkEndpoint string, opts ...WellKnownOtpFunc) (_ *WellKnownConfiguration, err error) {
 	assert.StrNotEmpty(wkEndpoint, assert.Panic, "well-known endpoint is required")
 
 	endpoint := "well-known"
@@ -422,25 +470,33 @@ func fetchWellKnown(ctx context.Context, wkEndpoint string, client *http.Client)
 	defer timer.ObserveDuration()
 	defer metric.DeferMonitorError(endpoint, &err)
 
-	if client == nil {
-		client = http.DefaultClient
+	opt := &WellKnownOptions{
+		http: newHttpLimitClient(LIMIT_HTTP_RESP_BODY_MAX_SIZE_BYTES, http.DefaultClient),
+	}
+
+	for _, fn := range opts {
+		fn(opt)
 	}
 
 	req, err := http.NewRequest(http.MethodGet, wkEndpoint, nil)
 	if err != nil {
 		return nil, err
 	}
-	tracing.AddTraceIDFromContext(ctx, req)
+	tracing.AddHeadersFromContext(ctx, req)
 
-	resp, err := client.Do(req)
+	resp, err := opt.http.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, opt.http.maxSizeBytes))
 	if err != nil {
 		return nil, err
+	}
+
+	if len(body) >= int(opt.http.maxSizeBytes) {
+		return nil, fmt.Errorf("well-known: http resp body max size limit exceeded: %d bytes", opt.http.maxSizeBytes)
 	}
 
 	if resp.StatusCode != http.StatusOK {

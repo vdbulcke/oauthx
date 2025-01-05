@@ -159,7 +159,7 @@ func (c *OAuthClient) PlumbingDoHttpEndSessionRequest(ctx context.Context, req *
 	defer timer.ObserveDuration()
 	defer metric.DeferMonitorError(endpoint, &err)
 
-	tracing.AddTraceIDFromContext(ctx, req)
+	tracing.AddHeadersFromContext(ctx, req)
 
 	client := c.getHttpClientWithoutRedirect()
 
@@ -207,8 +207,8 @@ func (c *OAuthClient) getHttpClientWithoutRedirect() *http.Client {
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
-		Transport: c.client.Transport,
-		Timeout:   c.client.Timeout,
+		Transport: c.http.client.Transport,
+		Timeout:   c.http.client.Timeout,
 		// Jar: c.client.Jar,
 	}
 }
