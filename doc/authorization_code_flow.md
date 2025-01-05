@@ -1,4 +1,4 @@
-# AUthorization Code Flow
+# Authorization Code Flow
 
 ```go
 // see README.md for info on how to 
@@ -40,9 +40,9 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
   cache[oauthCtx.State] = oauthCtx
 
 
-  // WARNING you should set the 'state' as a csrf cookie
+  //  you should set the 'state' as a csrf cookie
   ttl := 15 * time.Minute
-  	cookie := &http.Cookie{
+	cookie := &http.Cookie{
   	Name:     "oauthx_csrf",
   	Value:    oauthCtx.State,
   	MaxAge:   int(ttl.Seconds()),
@@ -129,8 +129,6 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     panic(err)
   }
-
-     
 
 }
 

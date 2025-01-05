@@ -10,10 +10,9 @@ issuer := "https://as.example.com"
 clientId := "my_client_id"
 
 ctx := context.Background()
-httpClient := http.DefaultClient
 
 // fetch '/.well-known/openid-configuration'
-wk, err := oauthx.NewWellKnownOpenidConfiguration(ctx, issuer, httpClient)
+wk, err := oauthx.NewWellKnownOpenidConfiguration(ctx, issuer)
 if err != nil {
   panic(err)
 }
@@ -34,10 +33,10 @@ clientSecret := "my_secret"
 auth := oauthx.NewClientSecretPost(clientId, clientSecret)
 
 ctx := context.Background()
-httpClient := http.DefaultClient
+
 
 // fetch '/.well-known/openid-configuration'
-wk, err := oauthx.NewWellKnownOpenidConfiguration(ctx, issuer, httpClient)
+wk, err := oauthx.NewWellKnownOpenidConfiguration(ctx, issuer)
 if err != nil {
   panic(err)
 }
@@ -73,10 +72,10 @@ if err != nil {
 auth := oauthx.NewPrivateKeyJwt(clientId, oauthkey)
 
 ctx := context.Background()
-httpClient := http.DefaultClient
+
 
 // fetch '/.well-known/openid-configuration'
-wk, err := oauthx.NewWellKnownOpenidConfiguration(ctx, issuer, httpClient)
+wk, err := oauthx.NewWellKnownOpenidConfiguration(ctx, issuer)
 if err != nil {
   panic(err)
 }
