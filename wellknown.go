@@ -337,6 +337,10 @@ type WellKnownConfiguration struct {
 	//    login status of the user at the OP.
 	CheckSessionEndpoint string `json:"check_session_endpoint,omitempty"`
 
+	// authorization_details_types_supported  rfc9396 RAR
+	//    the supported list of authorization details types
+	AuthorizationDetailsTypesSupported []string `json:"authorization_details_types_supported,omitempty"`
+
 	WellKnownRaw []byte
 }
 
