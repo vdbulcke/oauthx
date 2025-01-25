@@ -341,7 +341,7 @@ type WellKnownConfiguration struct {
 	//    the supported list of authorization details types
 	AuthorizationDetailsTypesSupported []string `json:"authorization_details_types_supported,omitempty"`
 
-	WellKnownRaw []byte
+	WellKnownRaw []byte `json:"-"`
 }
 
 type WellKnownOtpFunc func(*WellKnownOptions)

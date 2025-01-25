@@ -35,10 +35,10 @@ type PushedAuthorizationRequestResponse struct {
 	ExpiresIn int `json:"expires_in"`
 
 	// raw json body
-	Raw json.RawMessage
+	Raw json.RawMessage `json:"-"`
 
 	// used to compute expiration
-	receivedAt time.Time
+	receivedAt time.Time `json:"-"`
 }
 
 func (resp *PushedAuthorizationRequestResponse) GetExpiration() time.Time {

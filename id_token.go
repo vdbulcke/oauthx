@@ -171,14 +171,14 @@ type IDToken struct {
 	Jti string `json:"jti,omitempty"`
 
 	// raw claims
-	RawPayload []byte
-	RawHeader  []byte
-	RawSig     []byte
+	RawPayload []byte `json:"-"`
+	RawHeader  []byte `json:"-"`
+	RawSig     []byte `json:"-"`
 
-	RawToken       string
-	RawSignedToken string
+	RawToken       string `json:"-"`
+	RawSignedToken string `json:"-"`
 
-	Sig jose.Signature
+	Sig jose.Signature `json:"-"`
 }
 
 // openid-core-spec 5.1.  Standard Claims

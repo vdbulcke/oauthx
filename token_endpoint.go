@@ -99,10 +99,10 @@ type TokenResponse struct {
 	//    ID Token value associated with the authenticated session.
 	IDToken string `json:"id_token,omitempty"`
 	// raw json body
-	Raw json.RawMessage
+	Raw json.RawMessage `json:"-"`
 
 	// used to compute expiration
-	receivedAt time.Time
+	receivedAt time.Time `json:"-"`
 }
 
 func (resp *TokenResponse) GetExpiration() time.Time {

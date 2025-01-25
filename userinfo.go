@@ -24,16 +24,16 @@ type Userinfo struct {
 	Sub string `json:"sub,omitempty" validate:"required"`
 
 	// raw properties
-	RawPayload []byte
+	RawPayload []byte `json:"-"`
 
 	// if as jwt
-	RawHeader []byte
-	RawSig    []byte
+	RawHeader []byte `json:"-"`
+	RawSig    []byte `json:"-"`
 
-	RawToken       string
-	RawSignedToken string
+	RawToken       string `json:"-"`
+	RawSignedToken string `json:"-"`
 
-	Sig jose.Signature
+	Sig jose.Signature `json:"-"`
 }
 
 func (u *Userinfo) UnmarshallClaims(claims any) error {
