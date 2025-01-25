@@ -15,7 +15,7 @@ req := oauthx.NewBaseAuthzRequest()
 req.AddOpts(
 	oauthx.ClientIdOpt(client.ClientId),
 	oauthx.RedirectUriOpt("https://my.domain.com/callback"),
-	oauthx.ScopeOpt([]string{"openid", "profile", "email"}),
+	oauthx.ScopeOpt("openid", "profile", "email"),
   // sends authorization request options via
   // pushed authorization endpoint and
   // only use client_id and request_uri for
@@ -45,7 +45,7 @@ req := oauthx.NewBaseAuthzRequest()
 req.AddOpts(
 	oauthx.ClientIdOpt(client.ClientId),
 	oauthx.RedirectUriOpt("https://my.domain.com/callback"),
-	oauthx.ScopeOpt([]string{"openid", "profile", "email"}),
+	oauthx.ScopeOpt("openid", "profile", "email"),
   // generate the 'request' jwt paramater by
   // adding authorization options as jwt claims
   // only keeping the 'request=' 'client_id=' and 

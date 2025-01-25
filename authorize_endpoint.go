@@ -30,7 +30,7 @@ type AuthorizationRequest struct {
 //	req.AddOpts(
 //		oauthx.ClientIdOpt("my_client_id"),
 //		oauthx.RedirectUriOpt("https://my.domain.com/callback"),
-//		oauthx.ScopeOpt([]string{"openid", "profile", "email"}),
+//		oauthx.ScopeOpt("openid", "profile", "email"),
 //	)
 //	// let's make the authorization request via PAR.
 //	// Some options are not related to specific oauth parameter

@@ -177,7 +177,7 @@ func TestAuthZcodeFlow(t *testing.T) {
 				req.AddOpts(
 					oauthx.ClientIdOpt("oauthx-test"),
 					oauthx.RedirectUriOpt("http://example.com/callback"),
-					oauthx.ScopeOpt([]string{"openid", "profile"}),
+					oauthx.ScopeOpt("openid", "profile"),
 				)
 				return req
 			},
@@ -194,7 +194,7 @@ func TestAuthZcodeFlow(t *testing.T) {
 				req.AddOpts(
 					oauthx.ClientIdOpt("oauthx-test"),
 					oauthx.RedirectUriOpt("http://example.com/callback"),
-					oauthx.ScopeOpt([]string{"openid", "profile"}),
+					oauthx.ScopeOpt("openid", "profile"),
 				)
 				return req
 			},
@@ -211,7 +211,7 @@ func TestAuthZcodeFlow(t *testing.T) {
 				req.AddOpts(
 					oauthx.ClientIdOpt("oauthx-test"),
 					oauthx.RedirectUriOpt("http://example.com/callback"),
-					oauthx.ScopeOpt([]string{"openid", "profile"}),
+					oauthx.ScopeOpt("openid", "profile"),
 					oauthx.WithPushedAuthorizationRequest(),
 				)
 				return req
@@ -229,7 +229,7 @@ func TestAuthZcodeFlow(t *testing.T) {
 				req.AddOpts(
 					oauthx.ClientIdOpt("oauthx-test"),
 					oauthx.RedirectUriOpt("http://example.com/callback"),
-					oauthx.ScopeOpt([]string{"openid", "profile"}),
+					oauthx.ScopeOpt("openid", "profile"),
 					oauthx.WithPushedAuthorizationRequest(),
 					oauthx.WithGeneratedRequestJWTOnly(),
 				)
@@ -248,7 +248,7 @@ func TestAuthZcodeFlow(t *testing.T) {
 				req.AddOpts(
 					oauthx.ClientIdOpt("oauthx-test"),
 					oauthx.RedirectUriOpt("http://example.com/callback"),
-					oauthx.ScopeOpt([]string{"openid", "profile"}),
+					oauthx.ScopeOpt("openid", "profile"),
 					oauthx.WithPushedAuthorizationRequest(),
 					oauthx.WithGeneratedRequestJWTOnly(),
 					oauthx.WithStrictRequiredAuthorizationParams(),
@@ -268,7 +268,7 @@ func TestAuthZcodeFlow(t *testing.T) {
 				req.AddOpts(
 					oauthx.ClientIdOpt("oauthx-test"),
 					oauthx.RedirectUriOpt("http://example.com/callback"),
-					oauthx.ScopeOpt([]string{"openid", "profile"}),
+					oauthx.ScopeOpt("openid", "profile"),
 					oauthx.WithGeneratedRequestJWTOnly(),
 					oauthx.WithStrictRequiredAuthorizationParams(),
 				)
@@ -287,7 +287,7 @@ func TestAuthZcodeFlow(t *testing.T) {
 				req.AddOpts(
 					oauthx.ClientIdOpt("oauthx-test"),
 					oauthx.RedirectUriOpt("http://example.com/callback"),
-					oauthx.ScopeOpt([]string{"openid", "profile"}),
+					oauthx.ScopeOpt("openid", "profile"),
 					oauthx.WithGeneratedRequestJWTOnly(),
 					// oauthx.WithStrictRequiredAuthorizationParams(),
 				)

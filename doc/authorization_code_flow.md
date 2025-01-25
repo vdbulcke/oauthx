@@ -21,7 +21,7 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
   req.AddOpts(
   	oauthx.ClientIdOpt(client.ClientId),
   	oauthx.RedirectUriOpt("https://my.domain.com/callback"),
-  	oauthx.ScopeOpt([]string{"openid", "profile", "email"}),
+  	oauthx.ScopeOpt("openid", "profile", "email"),
   )
 
   // make the authorization request

@@ -191,7 +191,7 @@ func NewClientCredentialsGrantTokenRequest(scopes ...string) *TokenRequest {
 
 	if len(scopes) > 0 {
 		req.AddOpts(
-			ScopeOpt(scopes),
+			ScopeOpt(scopes...),
 		)
 	}
 

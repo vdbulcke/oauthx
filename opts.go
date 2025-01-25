@@ -271,7 +271,7 @@ func RedirectUriOpt(redirectUri string) OAuthOption {
 // ScopeOpt format scopes as a space separated string
 // set 'scope=' parameter in parameter
 // in request jwt as claims, and in [oauthx.OAuthContext]
-func ScopeOpt(scopes []string) OAuthOption {
+func ScopeOpt(scopes ...string) OAuthOption {
 	return SetOAuthParam("scope", strings.Join(scopes, " "))
 }
 
