@@ -349,7 +349,7 @@ func WithIDTokenRequiredClaimsValidation() IDTokenValidationFunc {
 
 		validate := validator.New()
 		validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
-			name := strings.SplitN(fld.Tag.Get("toml"), ",", 2)[0]
+			name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 
 			if name == "-" {
 				return ""
@@ -821,7 +821,8 @@ func GenerateAtHash(accessToken string, h hash.Hash) string {
 }
 
 type jwtHeader struct {
-	Alg string
+	Type string `json:"typ"`
+	Alg  string `json:"alg"`
 }
 
 func getJwtHeader(token string) ([]byte, error) {

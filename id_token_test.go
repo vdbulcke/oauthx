@@ -104,6 +104,281 @@ func genEncryptedIdToken(key crypto.PrivateKey, alg, kid string, claims jwt.MapC
 	return string(encrypted)
 }
 
+func genAccessToken(key crypto.PrivateKey, alg, kid string, claims jwt.MapClaims, header map[string]string) string {
+
+	var method jwt.SigningMethod
+	switch alg {
+	case "RS256":
+		method = jwt.SigningMethodRS256
+	case "RS384":
+		method = jwt.SigningMethodRS384
+	case "RS512":
+		method = jwt.SigningMethodRS512
+
+	case "ES256":
+		method = jwt.SigningMethodES256
+	case "ES384":
+		method = jwt.SigningMethodES384
+	case "ES512":
+		method = jwt.SigningMethodES512
+
+	}
+
+	token := jwt.NewWithClaims(method, claims)
+
+	token.Header["kid"] = kid
+	for k, v := range header {
+		token.Header[k] = v
+	}
+
+	return assert.Must(token.SignedString(key))
+}
+
+func genEncryptedAccessToken(key crypto.PrivateKey, alg, kid string, claims jwt.MapClaims, header map[string]string, clientJwkPublicKey crypto.PublicKey, jwaAlg jwa.KeyAlgorithm) string {
+
+	signedJwt := genAccessToken(key, alg, kid, claims, header)
+
+	hdr := jwe.NewHeaders()
+	hdr.Set("typ", "at+jwt")
+
+	encrypted := assert.Must(jwe.Encrypt([]byte(signedJwt),
+		jwe.WithKey(jwaAlg,
+			clientJwkPublicKey,
+			jwe.WithPerRecipientHeaders(hdr),
+		)))
+	return string(encrypted)
+}
+
+func TestAccessTokenParse(t *testing.T) {
+
+	serverkey := assert.Must(rsa.GenerateKey(rand.Reader, 2048))
+	clientRS256key := assert.Must(rsa.GenerateKey(rand.Reader, 2048))
+	clientES384key := assert.Must(ecdsa.GenerateKey(elliptic.P384(), rand.Reader))
+	mockServerRS256 := newMockServer(
+		serverkey,
+		"RS256",
+		"123456789",
+	)
+	defer mockServerRS256.mockServer.Close()
+
+	clientId := "oauthx-test"
+	ctx := context.Background()
+	httpClient := mockServerRS256.mockServer.Client()
+
+	wk := assert.Must(oauthx.NewWellKnownOpenidConfiguration(ctx, mockServerRS256.mockServer.URL, oauthx.WellKnownWithHttpClientDefaultLimit(httpClient)))
+
+	clientOAuthKey := assert.Must(oauthx.NewOAuthPrivateKey(clientRS256key, "RS256", "client-kid"))
+
+	client := oauthx.NewOAuthClient(clientId, wk,
+		oauthx.WithHttpClient(httpClient),
+		oauthx.WithOAuthPrivateKey(clientOAuthKey),
+	)
+
+	tbl := []struct {
+		testName    string
+		mock        *mockServer
+		client      *oauthx.OAuthClient
+		accessToken string
+		opts        []oauthx.JwtAccessTokenParseOpts
+		valid       bool
+	}{
+
+		{
+			testName: "valid token",
+			valid:    true,
+			client:   client,
+			mock:     mockServerRS256,
+			accessToken: genAccessToken(
+				serverkey,
+				"RS256",
+				"123456789",
+				jwt.MapClaims{
+					"iss":       mockServerRS256.getWellknown().Issuer,
+					"aud":       clientId,
+					"client_id": clientId,
+					"exp":       jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+					"iat":       jwt.NewNumericDate(time.Now()),
+					"nbf":       jwt.NewNumericDate(time.Now()),
+					"sub":       "alice",
+					"jti":       "123456798",
+				},
+				map[string]string{
+					"typ": "at+jwt",
+				},
+			),
+		},
+		{
+			testName: "valid token skew",
+			valid:    true,
+			client:   client,
+			mock:     mockServerRS256,
+			accessToken: genAccessToken(
+				serverkey,
+				"RS256",
+				"123456789",
+				jwt.MapClaims{
+					"iss":       mockServerRS256.getWellknown().Issuer,
+					"aud":       clientId,
+					"client_id": clientId,
+					"exp":       jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+					"iat":       jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+					"nbf":       jwt.NewNumericDate(time.Now()),
+					"sub":       "alice",
+					"jti":       "123456798",
+				},
+				map[string]string{
+					"typ": "at+jwt",
+				},
+			),
+			opts: []oauthx.JwtAccessTokenParseOpts{oauthx.WithJwtAccessTokenClockSkew(6 * time.Minute)},
+		},
+
+		{
+			testName: "valid encrypted token",
+			valid:    true,
+			client:   client,
+			mock:     mockServerRS256,
+			accessToken: genEncryptedAccessToken(
+				serverkey,
+				"RS256",
+				"123456789",
+				jwt.MapClaims{
+					"iss":       mockServerRS256.getWellknown().Issuer,
+					"aud":       clientId,
+					"client_id": clientId,
+					"exp":       jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+					"iat":       jwt.NewNumericDate(time.Now()),
+					"nbf":       jwt.NewNumericDate(time.Now()),
+					"sub":       "alice",
+					"jti":       "123456798",
+				},
+				map[string]string{
+					"typ": "at+jwt",
+				},
+				clientRS256key,
+				jwa.RSA_OAEP,
+			),
+			opts: []oauthx.JwtAccessTokenParseOpts{oauthx.WithJwtAccessTokenRequiredEncryption()},
+		},
+
+		{
+			testName: "wrong typ token",
+			valid:    false,
+			client:   client,
+			mock:     mockServerRS256,
+			accessToken: genAccessToken(
+				serverkey,
+				"RS256",
+				"123456789",
+				jwt.MapClaims{
+					"iss":       mockServerRS256.getWellknown().Issuer,
+					"aud":       clientId,
+					"client_id": clientId,
+					"exp":       jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+					"iat":       jwt.NewNumericDate(time.Now()),
+					"nbf":       jwt.NewNumericDate(time.Now()),
+					"sub":       "alice",
+					"jti":       "123456798",
+				},
+				map[string]string{},
+			),
+		},
+		{
+			testName: "wrong kid token",
+			valid:    false,
+			client:   client,
+			mock:     mockServerRS256,
+			accessToken: genAccessToken(
+				serverkey,
+				"RS256",
+				"wrong",
+				jwt.MapClaims{
+					"iss":       mockServerRS256.getWellknown().Issuer,
+					"aud":       clientId,
+					"client_id": clientId,
+					"exp":       jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+					"iat":       jwt.NewNumericDate(time.Now()),
+					"nbf":       jwt.NewNumericDate(time.Now()),
+					"sub":       "alice",
+					"jti":       "123456798",
+				},
+				map[string]string{
+					"typ": "at+jwt",
+				},
+			),
+		},
+		{
+			testName: "wrong key ",
+			valid:    false,
+			client:   client,
+			mock:     mockServerRS256,
+			accessToken: genAccessToken(
+				clientRS256key,
+				"RS256",
+				"123456789",
+				jwt.MapClaims{
+					"iss":       mockServerRS256.getWellknown().Issuer,
+					"aud":       clientId,
+					"client_id": clientId,
+					"exp":       jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+					"iat":       jwt.NewNumericDate(time.Now()),
+					"nbf":       jwt.NewNumericDate(time.Now()),
+					"sub":       "alice",
+					"jti":       "123456798",
+				},
+				map[string]string{
+					"typ": "at+jwt",
+				},
+			),
+		},
+
+		{
+			testName: "invalid encrypted token",
+			valid:    false,
+			client:   client,
+			mock:     mockServerRS256,
+			accessToken: genEncryptedAccessToken(
+				serverkey,
+				"RS256",
+				"123456789",
+				jwt.MapClaims{
+					"iss":       mockServerRS256.getWellknown().Issuer,
+					"aud":       clientId,
+					"client_id": clientId,
+					"exp":       jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+					"iat":       jwt.NewNumericDate(time.Now()),
+					"nbf":       jwt.NewNumericDate(time.Now()),
+					"sub":       "alice",
+					"jti":       "123456798",
+				},
+				map[string]string{
+					"typ": "at+jwt",
+				},
+				clientES384key,
+				jwa.ECDH_ES_A128KW, // use unsupported encryption alg got client
+
+			),
+		},
+	}
+
+	for _, test := range tbl {
+		t.Run(test.testName, func(t *testing.T) {
+			assert.NotNil(test.client, assert.Panic, "a *oauthx.OAuthClient must be defined for each test")
+
+			_, err := test.client.ParseJwtAccessToken(ctx, test.accessToken, test.opts...)
+			if test.valid && err != nil {
+				t.Log("expected valid but got error", err, "token", test.accessToken)
+				t.Fail()
+			} else if !test.valid && err == nil {
+
+				t.Log("expected  invalid but got no error", "token", test.accessToken)
+				t.Fail()
+			}
+		})
+	}
+
+}
+
 func TestIDTokenParse(t *testing.T) {
 
 	serverkey := assert.Must(rsa.GenerateKey(rand.Reader, 2048))
