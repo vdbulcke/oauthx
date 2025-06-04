@@ -90,7 +90,7 @@ func (c *OAuthClient) NewClientBaseAuthzRequest(extra ...OAuthOption) *AuthZRequ
 func (c *OAuthClient) PlumbingGenerateAuthZRequestParam(req *AuthZRequest) (url.Values, error) {
 
 	params := url.Values{}
-	claims := map[string]interface{}{}
+	claims := map[string]any{}
 	reqCtx := req.reqCtx
 	if reqCtx == nil {
 		reqCtx = &OAuthContext{}
@@ -104,7 +104,15 @@ func (c *OAuthClient) PlumbingGenerateAuthZRequestParam(req *AuthZRequest) (url.
 	}
 
 	if reqCtx.WithRFC9101Request {
-		request, err := c.PlumbingGenerateRFC9101RequestJwt(claims)
+
+		jwtHeader := []*HeaderField{}
+
+		if !reqCtx.LegacyRFC9101RequestJwtTyp {
+			// rfc9101 10.8 Cross Jwt Confusion
+			jwtHeader = append(jwtHeader, &HeaderField{Key: "typ", Value: "oauth-authz-req+jwt"})
+		}
+
+		request, err := c.PlumbingGenerateRFC9101RequestJwt(claims, jwtHeader...)
 		if err != nil {
 			return nil, err
 		}

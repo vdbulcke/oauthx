@@ -26,6 +26,7 @@ type OAuthContext struct {
 	WithRFC9126Par                        bool
 	WithRFC9101Request                    bool
 	WithStrictRequiredAuthorizationParams bool
+	LegacyRFC9101RequestJwtTyp            bool
 }
 
 // OAuthOption a OAuth2 request
@@ -73,6 +74,14 @@ func (p withStrictRequestOpt) SetValue(m url.Values) {
 func (p withStrictRequestOpt) SetClaim(_ map[string]interface{}) {}
 func (p withStrictRequestOpt) SetRequestContext(oauthCtx *OAuthContext) {
 	oauthCtx.WithRFC9101Request = true
+}
+
+type withLegacyRequestJwtTypOpt struct{}
+
+func (p withLegacyRequestJwtTypOpt) SetValue(_ url.Values)             {}
+func (p withLegacyRequestJwtTypOpt) SetClaim(_ map[string]interface{}) {}
+func (p withLegacyRequestJwtTypOpt) SetRequestContext(oauthCtx *OAuthContext) {
+	oauthCtx.LegacyRFC9101RequestJwtTyp = true
 }
 
 type setParamAndClaim struct{ k, v string }
@@ -201,6 +210,13 @@ func WithGeneratedRequestJWTOnly(keep ...string) OAuthOption {
 	return withStrictRequestOpt{
 		paramsToKeep: keep,
 	}
+}
+
+// WithLegacyRequestJWTType set the jwt header
+// to 'typ': 'JWT' in rfc9101 generated request jwt.
+// Instead of the default 'typ': 'oauth-authz-req+jwt'
+func WithLegacyRequestJWTHeaderType() OAuthOption {
+	return withLegacyRequestJwtTypOpt{}
 }
 
 // WithStrictRequiredAuthorizationParams

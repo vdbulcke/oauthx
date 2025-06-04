@@ -11,11 +11,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+type HeaderField struct {
+	Key   string
+	Value any
+}
+
 // OAuthPrivateKey interface for signing jwt
 type OAuthPrivateKey interface {
-	SignJWT(claims jwt.Claims) (string, error)           // signs jwt claims
-	SupportedDecryptAlg(alg string) bool                 // return true if alg is suppported for decryption
-	DecryptJWT(encryptedJwt, alg string) (string, error) // decrypt jwt
+	SignJWT(claims jwt.Claims, extraHeaderFields ...*HeaderField) (string, error) // signs jwt claims
+	SupportedDecryptAlg(alg string) bool                                          // return true if alg is suppported for decryption
+	DecryptJWT(encryptedJwt, alg string) (string, error)                          // decrypt jwt
 }
 
 type JwtAdvertiser interface {

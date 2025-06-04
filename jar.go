@@ -8,7 +8,7 @@ import (
 	"github.com/vdbulcke/assert"
 )
 
-func (c *OAuthClient) PlumbingGenerateRFC9101RequestJwt(claims map[string]interface{}) (string, error) {
+func (c *OAuthClient) PlumbingGenerateRFC9101RequestJwt(claims map[string]any, extraHeaderFields ...*HeaderField) (string, error) {
 	assert.NotNil(c.privateKey, assert.Panic, "rfc9101: private key required for generating 'request' JAR")
 
 	jwtClaims := jwt.MapClaims{}
@@ -29,7 +29,7 @@ func (c *OAuthClient) PlumbingGenerateRFC9101RequestJwt(claims map[string]interf
 		jwtClaims[k] = v
 	}
 
-	signedJwt, err := c.privateKey.SignJWT(jwtClaims)
+	signedJwt, err := c.privateKey.SignJWT(jwtClaims, extraHeaderFields...)
 	if err != nil {
 		return "", fmt.Errorf("rfc9101: %w", err)
 	}

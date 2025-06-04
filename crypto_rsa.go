@@ -97,10 +97,18 @@ func (k *RSAJWTSigner) JWKS() ([]byte, error) {
 }
 
 // SignJWT signs jwt.Claims with the Keypair and returns a token string
-func (k *RSAJWTSigner) SignJWT(claims jwt.Claims) (string, error) {
+func (k *RSAJWTSigner) SignJWT(claims jwt.Claims, extraHeaderFields ...*HeaderField) (string, error) {
 	token := jwt.NewWithClaims(k.signingMethod, claims)
 
 	token.Header["kid"] = k.Kid
+
+	for _, hf := range extraHeaderFields {
+		if hf == nil {
+			continue
+		}
+
+		token.Header[hf.Key] = hf.Value
+	}
 
 	return token.SignedString(k.PrivateKey)
 }
