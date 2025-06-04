@@ -16,6 +16,7 @@ implements the following standards:
 - rfc9101: JAR (`request=` jwt parameter)
 - rfc9126: Pushed Authorization Request (`request_uri` parameter)
 - rfc9396: RAR (`authorization_details`)
+- rfc9068: JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens (JWT AccessToken)
 - openid-connect-core: 3.1.3.7.  ID Token Validation
 - openid-connect-core: 3.1.3.8.  Access Token Validation
 - openid-connect-core: 5.5.   Requesting Claims using the "claims" Request Parameter`claims=`
