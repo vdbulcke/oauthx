@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/vdbulcke/oauthx"
-	"github.com/vdbulcke/oauthx/assert"
+	"github.com/vdbulcke/assert"
 )
 
 type validateRequest func(req *http.Request) error
@@ -73,7 +73,7 @@ func (ms *mockAS) wkHanler() http.HandlerFunc {
 		w.Header().Add("Content-Type", "application/json")
 		// w.WriteHeader()
 		err := json.NewEncoder(w).Encode(wk)
-		assert.ErrNotNil(err, assert.Panic, "wkHandler json")
+		assert.NoErr(err, assert.Panic, "wkHandler json")
 	}
 }
 
@@ -98,7 +98,7 @@ func (ms *mockAS) parHandler() http.HandlerFunc {
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(201)
 		err = json.NewEncoder(w).Encode(resp)
-		assert.ErrNotNil(err, assert.Panic, "parHandler json")
+		assert.NoErr(err, assert.Panic, "parHandler json")
 	}
 }
 
@@ -126,7 +126,7 @@ func (ms *mockAS) tokenHandler() http.HandlerFunc {
 		w.Header().Add("Content-Type", "application/json")
 		// w.WriteHeader()
 		err = json.NewEncoder(w).Encode(resp)
-		assert.ErrNotNil(err, assert.Panic, "tokenHandler json")
+		assert.NoErr(err, assert.Panic, "tokenHandler json")
 	}
 }
 
@@ -149,7 +149,7 @@ func (ms *mockAS) introspectHandler() http.HandlerFunc {
 		w.Header().Add("Content-Type", "application/json")
 		// w.WriteHeader()
 		err = json.NewEncoder(w).Encode(resp)
-		assert.ErrNotNil(err, assert.Panic, "introspectHandler json")
+		assert.NoErr(err, assert.Panic, "introspectHandler json")
 	}
 }
 

@@ -13,7 +13,7 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vdbulcke/oauthx/assert"
+	"github.com/vdbulcke/assert"
 	"github.com/vdbulcke/oauthx/metric"
 	"github.com/vdbulcke/oauthx/tracing"
 )

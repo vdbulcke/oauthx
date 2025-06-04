@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/vdbulcke/oauthx/assert"
+	"github.com/vdbulcke/assert"
 )
 
 type OAuthClient struct {

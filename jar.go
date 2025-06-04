@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/vdbulcke/oauthx/assert"
+	"github.com/vdbulcke/assert"
 )
 
 func (c *OAuthClient) PlumbingGenerateRFC9101RequestJwt(claims map[string]interface{}) (string, error) {

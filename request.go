@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/vdbulcke/oauthx/assert"
+	"github.com/vdbulcke/assert"
 )
 
 type AuthZRequest struct {

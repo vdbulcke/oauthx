@@ -3,7 +3,7 @@ package oauthx
 import (
 	"net/http"
 
-	"github.com/vdbulcke/oauthx/assert"
+	"github.com/vdbulcke/assert"
 )
 
 type httpLimitClient struct {

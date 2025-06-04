@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/vdbulcke/oauthx/assert"
+	"github.com/vdbulcke/assert"
 )
 
 type AuthorizationRequest struct {

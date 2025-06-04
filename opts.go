@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/vdbulcke/oauthx/assert"
+	"github.com/vdbulcke/assert"
 )
 
 const (

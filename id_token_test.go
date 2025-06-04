@@ -17,8 +17,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwe"
+	"github.com/vdbulcke/assert"
 	"github.com/vdbulcke/oauthx"
-	"github.com/vdbulcke/oauthx/assert"
 )
 
 type mockServer struct {
@@ -87,7 +87,7 @@ func (ms *mockServer) wkHanler() http.HandlerFunc {
 		w.Header().Add("Content-Type", "application/json")
 		// w.WriteHeader()
 		err := json.NewEncoder(w).Encode(wk)
-		assert.ErrNotNil(err, assert.Panic, "wkHandler json")
+		assert.NoErr(err, assert.Panic, "wkHandler json")
 	}
 }
 

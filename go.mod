@@ -1,6 +1,8 @@
 module github.com/vdbulcke/oauthx
 
-go 1.23.3
+go 1.24.1
+
+// replace github.com/vdbulcke/assert => ../assert
 
 require (
 	github.com/go-jose/go-jose/v4 v4.0.5
@@ -8,6 +10,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/lestrrat-go/jwx/v2 v2.1.3
 	github.com/prometheus/client_golang v1.20.5
+	github.com/vdbulcke/assert v0.0.2
 	golang.org/x/sync v0.12.0
 )
 
