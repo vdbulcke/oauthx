@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2025-06-04
+
+### 🚀 Features
+
+- *(rar)* Add AuthorizationDetailsAllowUnregisteredType flag
+- Rfc9068 jwt access token new ParseJwtAccessToken() function
+- [**breaking**] Rfc9101 set header typ 'oauth-authz-req+jwt' for request jwt
+
+### 🐛 Bug Fixes
+
+- Switch github.com/vdbulcke/assert lib
+
+## [0.2.1] - 2025-03-24
+
+### 🐛 Bug Fixes
+
+- Upgrade dependencies
+
+### 📚 Documentation
+
+- Changelog
+
 ## [0.2.0] - 2025-01-25
 
 ### 🚀 Features
