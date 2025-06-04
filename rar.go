@@ -3,6 +3,7 @@ package oauthx
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 type AuthorizationDetailI interface {
@@ -44,6 +45,16 @@ type AuthorizationDetailI interface {
 //	 same type.
 type AuthorizationDetails []AuthorizationDetailI
 
+// AuthorizationDetailsAllowUnregisteredType (default true)
+//
+// if true, if a 'type' from authoriation_details is not
+// one of the registered type, the json object will unmarshaled
+// into [oauthx.AuthorizationDetailI].
+//
+// if false, the UnmarshalJSON() function will return a
+// [oauthx.ErrRFC9396UnsupportedType] sentinel error
+var AuthorizationDetailsAllowUnregisteredType = true
+
 // UnmarshalJSON implements [json.Unmarshaler] interface
 //
 // This will validate each json object within the json array have the
@@ -82,8 +93,13 @@ func (ads *AuthorizationDetails) UnmarshalJSON(b []byte) error {
 		// check supported type
 		factory, ok := lookup[required.Type]
 		if !ok {
-			// if not supported match unsupported
-			factory = UnregisteredAuthorizationDetail{}
+			if AuthorizationDetailsAllowUnregisteredType {
+				// if not supported match unsupported
+				factory = UnregisteredAuthorizationDetail{}
+			} else {
+				return fmt.Errorf("%w for type: '%s'", ErrRFC9396UnsupportedType, required.Type)
+			}
+
 		}
 
 		// get concrete struct from matched factory
@@ -140,4 +156,5 @@ type requiredType struct {
 
 var (
 	ErrRFC9396MissingRequiredType = errors.New("RFC9396  missing required 'type' in 'authorization_details' ")
+	ErrRFC9396UnsupportedType     = errors.New("RFC9396 unsuported 'type' in 'authorization_details' ")
 )

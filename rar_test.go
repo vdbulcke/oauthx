@@ -2,6 +2,7 @@ package oauthx_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -108,6 +109,65 @@ func TestRAR(t *testing.T) {
 	_ = oauthx.NewAuthZRequest(
 		oauthx.AuthorizationDetailsParamaterOpt(authDetails),
 	)
+
+}
+func TestRARUnregister(t *testing.T) {
+
+	payload := []byte(`
+      [
+        {
+          "type": "credential",
+          "documentDigests": [
+            {
+              "hash": "sTOgwOm+474gFj0q0x1iSNspKqbcse4IeiqlDg/HWuI=",
+              "label": "Example Contract"
+            },
+            {
+              "hash": "HZQzZmMAIWekfGH0/ZKW1nsdt0xg3H6bZYztgsMTLw0=",
+              "label": "Example Terms of Service"
+            }
+          ],
+          "signatureQualifier": "eu_eidas_qes",
+          "hashAlgorithmOID": "2.16.840.1.101.3.4.2.1"
+        },
+        
+      {
+         "type": "payment_initiation",
+         "actions": [
+            "initiate",
+            "status",
+            "cancel"
+         ],
+         "locations": [
+            "https://example.com/payments"
+         ],
+         "instructedAmount": {
+            "currency": "EUR",
+            "amount": "123.50"
+         },
+         "creditorName": "Merchant A",
+         "creditorAccount": {
+            "iban": "DE02100100109307118603"
+         },
+         "remittanceInformationUnstructured": "Ref Number Merchant"
+      }
+      ]`)
+
+	// oauthx.RegisterAuthorizationDetail(&PaymentInitiation{})
+	oauthx.AuthorizationDetailsAllowUnregisteredType = false
+	var ads oauthx.AuthorizationDetails
+	err := json.Unmarshal(payload, &ads)
+	if err == nil {
+
+		t.Error("json unmarshal should error")
+		t.Fail()
+	}
+
+	if !errors.Is(err, oauthx.ErrRFC9396UnsupportedType) {
+
+		t.Error("json unmarshall should be oauthx.ErrRFC9396UnsupportedType", "err", err)
+		t.Fail()
+	}
 
 }
 
